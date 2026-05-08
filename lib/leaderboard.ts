@@ -34,6 +34,7 @@ export interface CorrectPredictionEntry {
   raceType: string;
   shareCode: string | null;
   createdAt: string;
+  verificationStatus: string | null;
 }
 
 export interface PredictionAccuracy {
@@ -49,6 +50,8 @@ export interface BigGapEntry {
   actualWinner: string;
   actualGap: string;
   proofType: string;
+  proofUrl: string | null;
+  verificationStatus: string | null;
   shareCode: string | null;
   severity: number;
   createdAt: string;
@@ -145,6 +148,7 @@ export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData
         raceType: matchup.race_type,
         shareCode: matchup.share_code ?? null,
         createdAt: r.created_at,
+        verificationStatus: r.verification_status ?? null,
       });
     }
   }
@@ -173,6 +177,8 @@ export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData
         actualWinner: r.actual_winner,
         actualGap: r.actual_gap,
         proofType: r.proof_type,
+        proofUrl: r.proof_url ?? null,
+        verificationStatus: r.verification_status ?? null,
         shareCode: matchup.share_code ?? null,
         severity: getGapSeverity(r.actual_gap),
         createdAt: r.created_at,

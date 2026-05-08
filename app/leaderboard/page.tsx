@@ -3,12 +3,17 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { formatRaceType, formatProofType, formatDate } from '@/lib/format';
+import {
+  formatRaceType,
+  formatProofType,
+  formatDate,
+  formatVerificationStatus,
+  getVerificationBadgeClass,
+} from '@/lib/format';
 import { buildLeaderboards } from '@/lib/leaderboard';
 import type { ResultWithMatchup } from '@/lib/types';
 import type { LeaderboardData } from '@/lib/leaderboard';
 
-// --- Section card wrapper ---
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-6">
@@ -18,7 +23,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// --- 1. Most Reported Wins ---
 function MostWinsSection({ data }: { data: LeaderboardData }) {
   if (data.mostWins.length === 0) {
     return (
@@ -27,7 +31,6 @@ function MostWinsSection({ data }: { data: LeaderboardData }) {
       </Section>
     );
   }
-
   return (
     <Section title="Most Reported Wins">
       <p className="text-xs text-zinc-600 mb-3 -mt-1">
@@ -35,12 +38,9 @@ function MostWinsSection({ data }: { data: LeaderboardData }) {
       </p>
       <div className="space-y-2">
         {data.mostWins.map((entry, i) => (
-          <div
-            key={entry.buildKey}
-            className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-3"
-          >
+          <div key={entry.buildKey} className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-3">
             <span className="text-lg font-black text-zinc-500 w-7 shrink-0">
-              {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+              #{i + 1}
             </span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate">{entry.displayLabel}</p>
@@ -70,13 +70,10 @@ function MostWinsSection({ data }: { data: LeaderboardData }) {
   );
 }
 
-// --- 2. Most Correct Predictions ---
 function PredictionsSection({ data }: { data: LeaderboardData }) {
   const { predictionAccuracy, recentCorrect } = data;
-
   return (
     <Section title="Most Correct Predictions">
-      {/* Accuracy stats */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="bg-zinc-800/60 rounded-lg p-3 text-center">
           <p className="text-2xl font-black text-green-400">{predictionAccuracy.correct}</p>
@@ -98,10 +95,7 @@ function PredictionsSection({ data }: { data: LeaderboardData }) {
         <div className="space-y-2">
           <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Recent Correct Predictions</p>
           {recentCorrect.map((entry, i) => (
-            <div
-              key={i}
-              className="bg-zinc-800/50 rounded-lg px-4 py-3"
-            >
+            <div key={i} className="bg-zinc-800/50 rounded-lg px-4 py-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-white leading-snug truncate">
@@ -117,6 +111,11 @@ function PredictionsSection({ data }: { data: LeaderboardData }) {
                       Actual: <span className="text-zinc-300">{entry.actualWinner}</span>
                     </p>
                     <p className="text-xs text-zinc-500">{formatRaceType(entry.raceType)}</p>
+                  </div>
+                  <div className="mt-1.5">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getVerificationBadgeClass(entry.verificationStatus)}`}>
+                      {formatVerificationStatus(entry.verificationStatus)}
+                    </span>
                   </div>
                 </div>
                 {entry.shareCode && (
@@ -136,7 +135,6 @@ function PredictionsSection({ data }: { data: LeaderboardData }) {
   );
 }
 
-// --- 3. Biggest Reported Gaps ---
 function BiggestGapsSection({ data }: { data: LeaderboardData }) {
   if (data.biggestGaps.length === 0) {
     return (
@@ -145,15 +143,11 @@ function BiggestGapsSection({ data }: { data: LeaderboardData }) {
       </Section>
     );
   }
-
   return (
     <Section title="Biggest Reported Gaps">
       <div className="space-y-2">
         {data.biggestGaps.map((entry, i) => (
-          <div
-            key={i}
-            className="bg-zinc-800/50 rounded-lg px-4 py-3"
-          >
+          <div key={i} className="bg-zinc-800/50 rounded-lg px-4 py-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -175,6 +169,21 @@ function BiggestGapsSection({ data }: { data: LeaderboardData }) {
                     Proof: <span className="text-zinc-400">{formatProofType(entry.proofType)}</span>
                   </p>
                 </div>
+                <div className="flex items-center gap-3 flex-wrap mt-1.5">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getVerificationBadgeClass(entry.verificationStatus)}`}>
+                    {formatVerificationStatus(entry.verificationStatus)}
+                  </span>
+                  {entry.proofUrl && (
+                    <a
+                      href={entry.proofUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+                    >
+                      View proof
+                    </a>
+                  )}
+                </div>
               </div>
               {entry.shareCode && (
                 <Link
@@ -192,7 +201,6 @@ function BiggestGapsSection({ data }: { data: LeaderboardData }) {
   );
 }
 
-// --- 4. Most Active / Most Submitted ---
 function ActivitySection({ data }: { data: LeaderboardData }) {
   const raceTypeLabels: { key: keyof typeof data.raceTypeCounts; label: string }[] = [
     { key: 'dig', label: 'Dig' },
@@ -201,9 +209,7 @@ function ActivitySection({ data }: { data: LeaderboardData }) {
     { key: '60-130', label: '60-130' },
     { key: 'quarter mile', label: 'Quarter Mile' },
   ];
-
   const maxCount = Math.max(...Object.values(data.raceTypeCounts), 1);
-
   return (
     <Section title="Most Active Race Types">
       <div className="mb-4">
@@ -220,10 +226,7 @@ function ActivitySection({ data }: { data: LeaderboardData }) {
             <div key={key} className="flex items-center gap-3">
               <span className="text-xs text-zinc-400 w-24 shrink-0">{label}</span>
               <div className="flex-1 bg-zinc-800 rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-2 bg-orange-500 rounded-full transition-all"
-                  style={{ width: `${pct}%` }}
-                />
+                <div className="h-2 bg-orange-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
               </div>
               <span className="text-xs font-bold text-zinc-300 w-6 text-right shrink-0">{count}</span>
             </div>
@@ -234,7 +237,6 @@ function ActivitySection({ data }: { data: LeaderboardData }) {
   );
 }
 
-// --- Main Page ---
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -251,6 +253,8 @@ export default function LeaderboardPage() {
           actual_gap,
           result_notes,
           proof_type,
+          proof_url,
+          verification_status,
           prediction_was_correct,
           created_at,
           matchups (
@@ -272,7 +276,6 @@ export default function LeaderboardPage() {
       }
       setLoading(false);
     }
-
     fetchData();
   }, []);
 
@@ -285,12 +288,8 @@ export default function LeaderboardPage() {
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="max-w-3xl mx-auto px-4 py-10">
 
-        {/* Header */}
         <div className="text-center mb-10">
-          <Link
-            href="/"
-            className="text-orange-500 font-black text-2xl hover:text-orange-400 transition-colors"
-          >
+          <Link href="/" className="text-orange-500 font-black text-2xl hover:text-orange-400 transition-colors">
             Will I Gap It?
           </Link>
           <h1 className="text-4xl font-black tracking-tight text-white mt-4 mb-1">
@@ -304,18 +303,11 @@ export default function LeaderboardPage() {
           </p>
         </div>
 
-        {/* Nav */}
         <div className="flex gap-3 mb-8 justify-center flex-wrap">
-          <Link
-            href="/"
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
-          >
+          <Link href="/" className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">
             Calculator
           </Link>
-          <Link
-            href="/results"
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
-          >
+          <Link href="/results" className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">
             Recent Results
           </Link>
           <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30 cursor-default">
@@ -323,37 +315,30 @@ export default function LeaderboardPage() {
           </span>
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="text-center py-20">
             <p className="text-zinc-500 animate-pulse">Loading leaderboard...</p>
           </div>
         )}
 
-        {/* Error */}
         {!loading && error && (
           <div className="bg-red-950/60 border border-red-700/60 rounded-xl p-5 text-red-300 text-sm text-center">
             {error}
           </div>
         )}
 
-        {/* Empty state */}
         {!loading && !error && isEmpty && (
           <div className="text-center py-20 bg-zinc-900 border border-zinc-800 rounded-xl">
             <p className="text-zinc-400 text-base font-semibold mb-2">No leaderboard data yet.</p>
             <p className="text-zinc-600 text-sm mb-6 px-6">
               Submit actual results from saved matchups to start ranking builds.
             </p>
-            <Link
-              href="/"
-              className="inline-block px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-sm"
-            >
+            <Link href="/" className="inline-block px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-sm">
               Go to Calculator
             </Link>
           </div>
         )}
 
-        {/* Leaderboard sections */}
         {!loading && !error && leaderboard && !isEmpty && (
           <>
             <ActivitySection data={leaderboard} />
@@ -363,7 +348,6 @@ export default function LeaderboardPage() {
           </>
         )}
 
-        {/* Disclaimer */}
         <p className="text-center text-zinc-600 text-xs mt-6">
           For closed-course and track comparison only. Results are estimates and
           do not guarantee real-world outcomes.

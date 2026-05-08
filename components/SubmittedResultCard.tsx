@@ -1,6 +1,6 @@
 'use client';
 
-import { formatProofType, formatDate } from '@/lib/format';
+import { formatProofType, formatDate, formatVerificationStatus, getVerificationBadgeClass } from '@/lib/format';
 import type { RaceResult } from '@/lib/types';
 
 interface Props {
@@ -12,12 +12,13 @@ interface Props {
 export default function SubmittedResultCard({ result, carAName, carBName }: Props) {
   const predictionCorrect = result.prediction_was_correct;
 
-  // Map stored winner keys back to display labels
   function winnerDisplay(winner: string) {
     if (winner === 'Car A') return `${carAName} (Car A)`;
     if (winner === 'Car B') return `${carBName} (Car B)`;
-    return winner; // "Too close / tie"
+    return winner;
   }
+
+  const verificationStatus = result.verification_status ?? 'unverified';
 
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6">
@@ -63,12 +64,32 @@ export default function SubmittedResultCard({ result, carAName, carBName }: Prop
         </div>
       </div>
 
-      {/* Proof type */}
+      {/* Proof type + verification status + proof link */}
       <div className="bg-zinc-800/60 border border-zinc-700/50 rounded-lg px-4 py-3 mb-3">
-        <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Proof</p>
-        <p className="text-sm text-zinc-300">
-          {formatProofType(result.proof_type)}
-        </p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Proof</p>
+            <p className="text-sm text-zinc-300">
+              {formatProofType(result.proof_type)}
+            </p>
+          </div>
+          <span
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getVerificationBadgeClass(verificationStatus)}`}
+          >
+            {formatVerificationStatus(verificationStatus)}
+          </span>
+        </div>
+
+        {result.proof_url && (
+          <a
+            href={result.proof_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-2 text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+          >
+            View proof &rarr;
+          </a>
+        )}
       </div>
 
       {/* Notes */}

@@ -63,6 +63,13 @@ export interface SavedMatchup {
   created_at: string;
 }
 
+export type VerificationStatus =
+  | 'unverified'
+  | 'proof_claimed'
+  | 'proof_linked'
+  | 'admin_verified'
+  | 'disputed';
+
 export interface RaceResult {
   id: string;
   matchup_id: string;
@@ -70,6 +77,8 @@ export interface RaceResult {
   actual_gap: string;
   result_notes: string | null;
   proof_type: string;
+  proof_url: string | null;
+  verification_status: VerificationStatus | null;
   prediction_was_correct: boolean | null;
   created_at: string;
 }

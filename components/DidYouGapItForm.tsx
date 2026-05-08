@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { CompareResult } from '@/lib/types';
+import type { CompareResult, VerificationStatus } from '@/lib/types';
 
 const ACTUAL_GAPS = [
   'Dead even',
@@ -31,10 +31,21 @@ export default function DidYouGapItForm({
   const [actualWinner, setActualWinner] = useState('');
   const [actualGap, setActualGap] = useState('');
   const [proofType, setProofType] = useState('None');
+  const [proofUrl, setProofUrl] = useState('');
   const [resultNotes, setResultNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+
+  function computeVerificationStatus(
+    type: string,
+    url: string
+  ): VerificationStatus {
+    const trimmedUrl = url.trim();
+    if (trimmedUrl) return 'proof_linked';
+    if (type !== 'none') return 'proof_claimed';
+    return 'unverified';
+  }
 
   async function handleSubmit() {
     if (!actualWinner) {
@@ -46,7 +57,12 @@ export default function DidYouGapItForm({
       return;
     }
 
-    // Determine whether the prediction was correct
+    const trimmedUrl = proofUrl.trim();
+    if (trimmedUrl && !trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+      setError('Proof URL must start with http:// or https://');
+      return;
+    }
+
     let predictionWasCorrect = false;
     if (predictedWinner === 'Too close' && actualWinner === 'Too close / tie') {
       predictionWasCorrect = true;
@@ -55,6 +71,9 @@ export default function DidYouGapItForm({
     } else if (predictedWinner === 'Car B' && actualWinner === 'Car B') {
       predictionWasCorrect = true;
     }
+
+    const normalizedProofType = proofType.toLowerCase().replace(/ /g, '_');
+    const verificationStatus = computeVerificationStatus(normalizedProofType, trimmedUrl);
 
     setSubmitting(true);
     setError('');
@@ -76,7 +95,9 @@ export default function DidYouGapItForm({
       matchup_id: matchupId,
       actual_winner: actualWinner,
       actual_gap: actualGap,
-      proof_type: proofType.toLowerCase().replace(/ /g, '_'),
+      proof_type: normalizedProofType,
+      proof_url: trimmedUrl || null,
+      verification_status: verificationStatus,
       result_notes: resultNotes.trim() || null,
       prediction_was_correct: predictionWasCorrect,
     });
@@ -155,6 +176,20 @@ export default function DidYouGapItForm({
               <option key={p}>{p}</option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className={lbl}>Proof URL (optional)</label>
+          <input
+            type="url"
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
+            placeholder="https://youtube.com/... or https://dragy.com/..."
+            value={proofUrl}
+            onChange={(e) => setProofUrl(e.target.value)}
+          />
+          <p className="text-xs text-zinc-600 mt-1">
+            YouTube, Dragy, Instagram, or any direct link. Must start with https://.
+          </p>
         </div>
 
         <div>

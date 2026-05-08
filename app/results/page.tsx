@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { getCarLabel } from '@/lib/compare';
-import { formatRaceType, formatProofType, formatDate } from '@/lib/format';
+import {
+  formatRaceType,
+  formatProofType,
+  formatDate,
+  formatVerificationStatus,
+  getVerificationBadgeClass,
+} from '@/lib/format';
 import type { ResultWithMatchup } from '@/lib/types';
 
 function PredictionBadge({ correct }: { correct: boolean | null }) {
@@ -17,11 +23,11 @@ function PredictionBadge({ correct }: { correct: boolean | null }) {
   }
   return correct ? (
     <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-green-900/60 text-green-400 border border-green-700/40">
-      ✓ Correct Prediction
+      Correct Prediction
     </span>
   ) : (
     <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-red-900/40 text-red-400 border border-red-700/40">
-      ✗ Missed Prediction
+      Missed Prediction
     </span>
   );
 }
@@ -41,13 +47,10 @@ function ResultEntry({ result }: { result: ResultWithMatchup }) {
       ? 'Too Close to Call'
       : '—';
 
-  const raceType = matchup?.race_type
-    ? formatRaceType(matchup.race_type)
-    : '—';
+  const raceType = matchup?.race_type ? formatRaceType(matchup.race_type) : '—';
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
-      {/* Header row */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30 mb-2">
@@ -62,7 +65,6 @@ function ResultEntry({ result }: { result: ResultWithMatchup }) {
         <PredictionBadge correct={result.prediction_was_correct} />
       </div>
 
-      {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <div className="bg-zinc-800/60 rounded-lg p-3">
           <p className="text-xs text-zinc-500 mb-1">Predicted Winner</p>
@@ -82,14 +84,30 @@ function ResultEntry({ result }: { result: ResultWithMatchup }) {
         </div>
       </div>
 
-      {/* Notes */}
+      <div className="flex items-center gap-3 flex-wrap mb-3">
+        <span
+          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getVerificationBadgeClass(result.verification_status)}`}
+        >
+          {formatVerificationStatus(result.verification_status)}
+        </span>
+        {result.proof_url && (
+          <a
+            href={result.proof_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+          >
+            View proof
+          </a>
+        )}
+      </div>
+
       {result.result_notes && (
         <p className="text-xs text-zinc-400 italic mb-3 border-l-2 border-zinc-700 pl-3">
           {result.result_notes}
         </p>
       )}
 
-      {/* Footer */}
       <div className="flex items-center justify-between">
         <p className="text-xs text-zinc-600">{formatDate(result.created_at)}</p>
         {matchup?.share_code && (
@@ -97,7 +115,7 @@ function ResultEntry({ result }: { result: ResultWithMatchup }) {
             href={`/matchup/${matchup.share_code}`}
             className="text-xs text-orange-500 hover:text-orange-400 transition-colors underline underline-offset-2"
           >
-            View original matchup →
+            View original matchup
           </Link>
         )}
       </div>
@@ -121,6 +139,8 @@ export default function ResultsPage() {
           actual_gap,
           result_notes,
           proof_type,
+          proof_url,
+          verification_status,
           prediction_was_correct,
           created_at,
           matchups (
@@ -141,7 +161,6 @@ export default function ResultsPage() {
       }
       setLoading(false);
     }
-
     fetchResults();
   }, []);
 
@@ -149,12 +168,8 @@ export default function ResultsPage() {
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="max-w-3xl mx-auto px-4 py-10">
 
-        {/* Header */}
         <div className="text-center mb-10">
-          <Link
-            href="/"
-            className="text-orange-500 font-black text-2xl hover:text-orange-400 transition-colors"
-          >
+          <Link href="/" className="text-orange-500 font-black text-2xl hover:text-orange-400 transition-colors">
             Will I Gap It?
           </Link>
           <h1 className="text-4xl font-black tracking-tight text-white mt-4 mb-1">
@@ -168,56 +183,42 @@ export default function ResultsPage() {
           </p>
         </div>
 
-        {/* Nav */}
         <div className="flex gap-3 mb-8 justify-center flex-wrap">
-          <Link
-            href="/"
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
-          >
-            ← Back to Calculator
+          <Link href="/" className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">
+            Back to Calculator
           </Link>
           <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30 cursor-default">
             Recent Results
           </span>
-          <Link
-            href="/leaderboard"
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
-          >
+          <Link href="/leaderboard" className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">
             Leaderboard
           </Link>
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="text-center py-20">
             <p className="text-zinc-500 animate-pulse">Loading results...</p>
           </div>
         )}
 
-        {/* Error */}
         {!loading && error && (
           <div className="bg-red-950/60 border border-red-700/60 rounded-xl p-5 text-red-300 text-sm text-center">
             {error}
           </div>
         )}
 
-        {/* Empty state */}
         {!loading && !error && results.length === 0 && (
           <div className="text-center py-20 bg-zinc-900 border border-zinc-800 rounded-xl">
             <p className="text-zinc-400 text-base font-semibold mb-2">No results yet.</p>
             <p className="text-zinc-600 text-sm mb-6">
               Be the first to submit a closed-course matchup outcome.
             </p>
-            <Link
-              href="/"
-              className="inline-block px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-sm"
-            >
+            <Link href="/" className="inline-block px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-sm">
               Go to Calculator
             </Link>
           </div>
         )}
 
-        {/* Results list */}
         {!loading && !error && results.length > 0 && (
           <div className="space-y-4">
             {results.map((result) => (
@@ -226,7 +227,6 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {/* Disclaimer */}
         <p className="text-center text-zinc-600 text-xs mt-10">
           For closed-course and track comparison only. Results are estimates and
           do not guarantee real-world outcomes.
