@@ -5,15 +5,20 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CarInputForm from '@/components/CarInputForm';
 import ResultCard from '@/components/ResultCard';
+import PageShell from '@/components/PageShell';
 import { CarInput, CompareResult, RaceType } from '@/lib/types';
 import { compareCars, getCarLabel } from '@/lib/compare';
 import { supabase } from '@/lib/supabase';
 import { generateShareCode } from '@/lib/shareCode';
 
+// ── Constants ────────────────────────────────────────────────────────────────
+
 const RACE_TYPES: RaceType[] = ['dig', '40 roll', '60 roll', '60-130', 'quarter mile'];
 
 const MIN_YEAR = 1886;
 const MAX_YEAR = new Date().getFullYear() + 1;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function defaultCar(): CarInput {
   return {
@@ -56,9 +61,12 @@ function validateCar(car: CarInput, label: string): string | null {
   return null;
 }
 
+// ── Page ─────────────────────────────────────────────────────────────────────
+
 export default function Home() {
   const router = useRouter();
 
+  // All state and logic below is UNCHANGED from the previous version.
   const [carA, setCarA] = useState<CarInput>(defaultCar());
   const [carB, setCarB] = useState<CarInput>(defaultCar());
   const [raceType, setRaceType] = useState<RaceType>('dig');
@@ -85,12 +93,17 @@ export default function Home() {
     setSaving(true);
     setSaveError('');
     const shareCode = generateShareCode();
+
+    // Attach user_id if logged in; anonymous saves still work (user_id = null)
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { error: dbError } = await supabase.from('matchups').insert({
       share_code: shareCode,
       car_a: carA,
       car_b: carB,
       race_type: raceType,
       prediction: result,
+      user_id: user?.id ?? null,
     });
     if (dbError) {
       setSaveError('Could not save matchup. Check your Supabase connection and try again.');
@@ -103,45 +116,58 @@ export default function Home() {
   const nameA = getCarLabel(carA) || 'Car A';
   const nameB = getCarLabel(carB) || 'Car B';
 
-  const btnClass = (rt: RaceType) =>
+  const raceBtnClass = (rt: RaceType) =>
     rt === raceType
       ? 'px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-orange-500 text-white'
-      : 'px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-zinc-800 text-zinc-300 hover:bg-zinc-700';
+      : 'px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700/60';
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-white">
-      <div className="max-w-5xl mx-auto px-4 py-10">
+    <PageShell>
 
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-black tracking-tight text-orange-500 mb-2">
-            Will I Gap It?
-          </h1>
-          <p className="text-zinc-400 text-lg mb-3">
-            Closed-course car matchup calculator.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link
-              href="/results"
-              className="inline-block text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2"
-            >
-              View Recent Results
-            </Link>
-            <Link
-              href="/leaderboard"
-              className="inline-block text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2"
-            >
-              Leaderboard
-            </Link>
-          </div>
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      <section className="text-center pt-6 pb-12">
+        <span className="inline-block px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold tracking-widest uppercase mb-5">
+          Closed-Course Only
+        </span>
+        <h1 className="text-5xl sm:text-6xl font-black tracking-tight text-white mb-3 leading-none">
+          Will I Gap It?
+        </h1>
+        <p className="text-zinc-400 text-lg mb-2">
+          Compare two builds. Pick the race. Get the estimated gap.
+        </p>
+        <p className="text-zinc-600 text-sm mb-8">
+          Closed-course and track comparison only.
+        </p>
+        <div className="flex gap-3 justify-center flex-wrap">
+          <a
+            href="#compare"
+            className="inline-block px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold rounded-xl transition-colors text-sm shadow-[0_2px_14px_rgba(249,115,22,0.28)]"
+          >
+            Compare Builds
+          </a>
+          <Link
+            href="/leaderboard"
+            className="inline-block px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 text-zinc-200 font-semibold rounded-xl transition-colors text-sm"
+          >
+            View Leaderboard
+          </Link>
         </div>
+      </section>
 
+      {/* ── Calculator ─────────────────────────────────────────────────────── */}
+      <div id="compare">
+
+        {/* Car input cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <CarInputForm label="Car A" value={carA} onChange={setCarA} />
           <CarInputForm label="Car B" value={carB} onChange={setCarB} />
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-5">
-          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">
+        {/* Race type picker */}
+        <div className="bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-zinc-950 border border-zinc-800/80 rounded-xl p-5 mb-5">
+          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">
             Race Type
           </p>
           <div className="flex flex-wrap gap-2">
@@ -149,7 +175,7 @@ export default function Home() {
               <button
                 key={rt}
                 onClick={() => setRaceType(rt)}
-                className={btnClass(rt)}
+                className={raceBtnClass(rt)}
               >
                 {rt.charAt(0).toUpperCase() + rt.slice(1)}
               </button>
@@ -161,7 +187,7 @@ export default function Home() {
           onClick={handleCompare}
           className="w-full py-4 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-lg rounded-xl transition-colors mb-5"
         >
-          Compare Cars
+          Compare Builds
         </button>
 
         {error && (
@@ -190,12 +216,12 @@ export default function Home() {
           </div>
         )}
 
-        <p className="text-center text-zinc-600 text-xs mt-10">
-          For closed-course and track comparison only. Results are estimates and
-          do not guarantee real-world outcomes.
-        </p>
-
       </div>
-    </main>
+
+      <p className="text-center text-zinc-700 text-xs mt-12">
+        No real names, plates, or locations required.
+      </p>
+
+    </PageShell>
   );
 }

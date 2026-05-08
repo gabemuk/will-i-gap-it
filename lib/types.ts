@@ -101,6 +101,14 @@ export interface SavedMatchup {
   race_type: RaceType;
   prediction: CompareResult;
   created_at: string;
+  user_id?: string | null;
+}
+
+export interface Profile {
+  id: string;
+  display_name: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type VerificationStatus =
@@ -121,6 +129,7 @@ export interface RaceResult {
   verification_status: VerificationStatus | null;
   prediction_was_correct: boolean | null;
   created_at: string;
+  user_id?: string | null;
 }
 
 export interface MatchupSummary {

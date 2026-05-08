@@ -91,6 +91,9 @@ export default function DidYouGapItForm({
       return;
     }
 
+    // Attach user_id if logged in; anonymous submissions still work (user_id = null)
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { error: dbError } = await supabase.from('race_results').insert({
       matchup_id: matchupId,
       actual_winner: actualWinner,
@@ -100,6 +103,7 @@ export default function DidYouGapItForm({
       verification_status: verificationStatus,
       result_notes: resultNotes.trim() || null,
       prediction_was_correct: predictionWasCorrect,
+      user_id: user?.id ?? null,
     });
 
     setSubmitting(false);

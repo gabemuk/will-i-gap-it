@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AuthNav from '@/components/AuthNav';
 import { supabase } from '@/lib/supabase';
 import { getCarLabel } from '@/lib/compare';
 import {
@@ -183,7 +184,7 @@ export default function ResultsPage() {
           </p>
         </div>
 
-        <div className="flex gap-3 mb-8 justify-center flex-wrap">
+        <div className="flex gap-3 mb-8 justify-center flex-wrap items-center">
           <Link href="/" className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">
             Back to Calculator
           </Link>
@@ -193,6 +194,7 @@ export default function ResultsPage() {
           <Link href="/leaderboard" className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">
             Leaderboard
           </Link>
+          <AuthNav />
         </div>
 
         {loading && (

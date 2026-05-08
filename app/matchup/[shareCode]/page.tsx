@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
+import AuthNav from '@/components/AuthNav';
 import { supabase } from '@/lib/supabase';
 import { getCarLabel } from '@/lib/compare';
 import DidYouGapItForm from '@/components/DidYouGapItForm';
@@ -22,7 +23,6 @@ export default function MatchupPage({ params }: PageProps) {
 
   useEffect(() => {
     async function fetchData() {
-      // Fetch matchup
       const { data: matchupData, error: matchupError } = await supabase
         .from('matchups')
         .select('*')
@@ -38,7 +38,6 @@ export default function MatchupPage({ params }: PageProps) {
       const loaded = matchupData as SavedMatchup;
       setMatchup(loaded);
 
-      // Fetch any existing result for this matchup
       const { data: resultData } = await supabase
         .from('race_results')
         .select('*')
@@ -106,7 +105,6 @@ export default function MatchupPage({ params }: PageProps) {
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="max-w-2xl mx-auto px-4 py-10">
 
-        {/* Header */}
         <div className="text-center mb-8">
           <Link
             href="/"
@@ -119,7 +117,6 @@ export default function MatchupPage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* Matchup title */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-4 text-center">
           <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">
             {raceTypeDisplay} Race
@@ -131,7 +128,6 @@ export default function MatchupPage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* Car cards - read-only specs */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           {[
             { label: 'Car A', car: matchup.car_a, name: carAName, accent: 'text-orange-500' },
@@ -165,13 +161,11 @@ export default function MatchupPage({ params }: PageProps) {
           ))}
         </div>
 
-        {/* Prediction card */}
         <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 mb-4">
           <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-5">
             Estimated Result
           </h3>
 
-          {/* Winner */}
           <div className="mb-6">
             <p className="text-xs text-zinc-500 mb-1">
               {prediction.winner === 'Too close' ? 'Verdict' : 'Likely winner'}
@@ -186,7 +180,6 @@ export default function MatchupPage({ params }: PageProps) {
             )}
           </div>
 
-          {/* Stats row */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-zinc-800 rounded-lg p-4">
               <p className="text-xs text-zinc-500 mb-1">Estimated Gap</p>
@@ -202,7 +195,6 @@ export default function MatchupPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Analysis */}
           <div className="mb-5">
             <p className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Analysis</p>
             <p className="text-sm text-zinc-300 leading-relaxed">
@@ -210,7 +202,6 @@ export default function MatchupPage({ params }: PageProps) {
             </p>
           </div>
 
-          {/* To close the gap */}
           <div className="bg-zinc-800/60 border border-zinc-700/50 rounded-lg p-4">
             <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">
               To Close the Gap
@@ -221,7 +212,6 @@ export default function MatchupPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Result section: form if no result yet, read-only card if already submitted */}
         {existingResult ? (
           <SubmittedResultCard
             result={existingResult}
@@ -237,7 +227,6 @@ export default function MatchupPage({ params }: PageProps) {
           />
         )}
 
-        {/* Navigation */}
         <div className="flex gap-3 mt-6">
           <Link
             href="/"
@@ -252,8 +241,10 @@ export default function MatchupPage({ params }: PageProps) {
             View Recent Results
           </Link>
         </div>
+        <div className="flex justify-center mt-3">
+          <AuthNav />
+        </div>
 
-        {/* Disclaimer */}
         <p className="text-center text-zinc-600 text-xs mt-8">
           For closed-course and track comparison only. Results are estimates and
           do not guarantee real-world outcomes.
