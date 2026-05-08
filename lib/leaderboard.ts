@@ -1,5 +1,6 @@
 import type { ResultWithMatchup } from './types';
 import { getCarLabel } from './compare';
+import { getBuildKey, getBuildDisplayLabel } from './normalize';
 
 // Gap severity ranking (higher = bigger gap)
 const GAP_SEVERITY: Record<string, number> = {
@@ -18,7 +19,8 @@ export function getGapSeverity(gap: string): number {
 // --- Types ---
 
 export interface WinEntry {
-  label: string;
+  buildKey: string;
+  displayLabel: string;
   wins: number;
   latestRaceType: string;
   latestShareCode: string | null;
@@ -72,8 +74,8 @@ export interface LeaderboardData {
 export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData {
   const totalResults = results.length;
 
-  // 1. Most Reported Wins
-  const winMap = new Map<string, { wins: number; latestRaceType: string; latestShareCode: string | null; latestDate: string }>();
+  // 1. Most Reported Wins (grouped by normalized buildKey, not raw display label)
+  const winMap = new Map<string, { displayLabel: string; wins: number; latestRaceType: string; latestShareCode: string | null; latestDate: string }>();
 
   for (const r of results) {
     if (r.actual_winner === 'Too close / tie') continue;
@@ -81,12 +83,19 @@ export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData
     if (!matchup) continue;
 
     const winningCar = r.actual_winner === 'Car A' ? matchup.car_a : matchup.car_b;
-    const label = getCarLabel(winningCar);
-    if (!label || label === 'Car') continue;
+    // Skip entries with no meaningful identity
+    const rawLabel = getCarLabel(winningCar);
+    if (!rawLabel || rawLabel === 'Car') continue;
 
-    const existing = winMap.get(label);
+    // Group by normalized build key so "2011 BMW M3 comp" and "2011 bmw m3 Competition" merge
+    const buildKey = getBuildKey(winningCar);
+    const displayLabel = getBuildDisplayLabel(winningCar);
+
+    const existing = winMap.get(buildKey);
     const isNewer = !existing || r.created_at > existing.latestDate;
-    winMap.set(label, {
+    winMap.set(buildKey, {
+      // Prefer the display label from the most recent entry
+      displayLabel: isNewer ? displayLabel : (existing?.displayLabel ?? displayLabel),
       wins: (existing?.wins ?? 0) + 1,
       latestRaceType: isNewer ? (matchup.race_type ?? '') : (existing?.latestRaceType ?? ''),
       latestShareCode: isNewer ? (matchup.share_code ?? null) : (existing?.latestShareCode ?? null),
@@ -95,8 +104,9 @@ export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData
   }
 
   const mostWins: WinEntry[] = Array.from(winMap.entries())
-    .map(([label, v]) => ({
-      label,
+    .map(([buildKey, v]) => ({
+      buildKey,
+      displayLabel: v.displayLabel,
       wins: v.wins,
       latestRaceType: v.latestRaceType,
       latestShareCode: v.latestShareCode,

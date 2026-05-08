@@ -30,17 +30,20 @@ function MostWinsSection({ data }: { data: LeaderboardData }) {
 
   return (
     <Section title="Most Reported Wins">
+      <p className="text-xs text-zinc-600 mb-3 -mt-1">
+        Similar builds are grouped using normalized year/make/model/trim data.
+      </p>
       <div className="space-y-2">
         {data.mostWins.map((entry, i) => (
           <div
-            key={entry.label}
+            key={entry.buildKey}
             className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-3"
           >
             <span className="text-lg font-black text-zinc-500 w-7 shrink-0">
               {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">{entry.label}</p>
+              <p className="text-sm font-bold text-white truncate">{entry.displayLabel}</p>
               {entry.latestRaceType && (
                 <p className="text-xs text-zinc-500 mt-0.5">
                   Latest: {formatRaceType(entry.latestRaceType)}
