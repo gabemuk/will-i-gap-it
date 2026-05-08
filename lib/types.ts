@@ -73,3 +73,15 @@ export interface RaceResult {
   prediction_was_correct: boolean | null;
   created_at: string;
 }
+
+export interface MatchupSummary {
+  share_code: string;
+  car_a: CarInput;
+  car_b: CarInput;
+  race_type: RaceType;
+  prediction: CompareResult;
+}
+
+export interface ResultWithMatchup extends RaceResult {
+  matchups: MatchupSummary | null;
+}

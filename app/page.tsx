@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import CarInputForm from '@/components/CarInputForm';
 import ResultCard from '@/components/ResultCard';
 import { CarInput, CompareResult, RaceType } from '@/lib/types';
@@ -111,9 +112,15 @@ export default function Home() {
           <h1 className="text-5xl font-black tracking-tight text-orange-500 mb-2">
             Will I Gap It?
           </h1>
-          <p className="text-zinc-400 text-lg">
+          <p className="text-zinc-400 text-lg mb-3">
             Closed-course car matchup calculator.
           </p>
+          <Link
+            href="/results"
+            className="inline-block text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2"
+          >
+            View Recent Results
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
@@ -165,7 +172,7 @@ export default function Home() {
                 disabled={saving}
                 className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-semibold rounded-xl border border-zinc-700 transition-colors text-sm"
               >
-                {saving ? 'Saving matchup...' : 'Save & Share This Matchup →'}
+                {saving ? 'Saving matchup...' : 'Save & Share This Matchup'}
               </button>
             </div>
           </div>
