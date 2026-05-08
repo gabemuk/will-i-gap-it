@@ -9,6 +9,9 @@ import {
   PowerType,
   Fuel,
   Aspiration,
+  PowertrainType,
+  ElectricMotorCount,
+  HybridLayout,
 } from '@/lib/types';
 
 interface Props {
@@ -114,19 +117,23 @@ export default function CarInputForm({ label, value, onChange }: Props) {
       {/* Power */}
       <p className={sectionHead}>Power</p>
       <div className="space-y-3">
+        {/* Powertrain Type - visible in basic section */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={lbl}>
-              Horsepower <span className="text-orange-500">*</span>
-            </label>
-            <input
-              type="number"
-              min={1}
-              className={inp}
-              placeholder="e.g. 300"
-              value={value.horsepower}
-              onChange={(e) => numericChange('horsepower', e.target.value)}
-            />
+            <label className={lbl}>Powertrain Type</label>
+            <select
+              className={sel}
+              value={value.powertrainType ?? 'Unknown'}
+              onChange={(e) =>
+                update('powertrainType', e.target.value as PowertrainType)
+              }
+            >
+              <option>Unknown</option>
+              <option>Gas</option>
+              <option>Diesel</option>
+              <option>Hybrid</option>
+              <option>Electric</option>
+            </select>
           </div>
           <div>
             <label className={lbl}>Power Type</label>
@@ -144,6 +151,19 @@ export default function CarInputForm({ label, value, onChange }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={lbl}>
+              Horsepower <span className="text-orange-500">*</span>
+            </label>
+            <input
+              type="number"
+              min={1}
+              className={inp}
+              placeholder="e.g. 300"
+              value={value.horsepower}
+              onChange={(e) => numericChange('horsepower', e.target.value)}
+            />
+          </div>
+          <div>
+            <label className={lbl}>
               Weight (lbs) <span className="text-orange-500">*</span>
             </label>
             <input
@@ -155,6 +175,8 @@ export default function CarInputForm({ label, value, onChange }: Props) {
               onChange={(e) => numericChange('weight', e.target.value)}
             />
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={lbl}>Drivetrain</label>
             <select
@@ -170,8 +192,6 @@ export default function CarInputForm({ label, value, onChange }: Props) {
               <option>4WD</option>
             </select>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={lbl}>Transmission</label>
             <select
@@ -181,26 +201,29 @@ export default function CarInputForm({ label, value, onChange }: Props) {
                 update('transmission', e.target.value as Transmission)
               }
             >
+              <option>Unknown</option>
               <option>Manual</option>
               <option>Auto</option>
               <option>DCT</option>
+              <option>Single-speed / EV</option>
+              <option>CVT</option>
             </select>
           </div>
-          <div>
-            <label className={lbl}>Tire Type</label>
-            <select
-              className={sel}
-              value={value.tire}
-              onChange={(e) => update('tire', e.target.value as TireType)}
-            >
-              <option>All-season</option>
-              <option>Summer</option>
-              <option>Performance summer</option>
-              <option>Winter</option>
-              <option>Drag radial</option>
-              <option>Slick</option>
-            </select>
-          </div>
+        </div>
+        <div>
+          <label className={lbl}>Tire Type</label>
+          <select
+            className={sel}
+            value={value.tire}
+            onChange={(e) => update('tire', e.target.value as TireType)}
+          >
+            <option>All-season</option>
+            <option>Summer</option>
+            <option>Performance summer</option>
+            <option>Winter</option>
+            <option>Drag radial</option>
+            <option>Slick</option>
+          </select>
         </div>
       </div>
 
@@ -221,7 +244,7 @@ export default function CarInputForm({ label, value, onChange }: Props) {
         <div className="mt-3 space-y-3">
           <p className={sectionHead}>Improve Accuracy</p>
 
-          {/* Torque + Aspiration */}
+          {/* Torque + Induction (internal prop name kept as aspiration for backward compat) */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={lbl}>Torque (lb-ft)</label>
@@ -235,7 +258,7 @@ export default function CarInputForm({ label, value, onChange }: Props) {
               />
             </div>
             <div>
-              <label className={lbl}>Aspiration</label>
+              <label className={lbl}>Induction</label>
               <select
                 className={sel}
                 value={value.aspiration}
@@ -246,14 +269,27 @@ export default function CarInputForm({ label, value, onChange }: Props) {
                 <option>Unknown</option>
                 <option>Naturally aspirated</option>
                 <option>Turbo</option>
-                <option>Supercharged</option>
                 <option>Twin-turbo</option>
+                <option>Supercharged</option>
+                <option>Procharged</option>
+                <option>Nitrous</option>
+                <option>Electric / None</option>
               </select>
             </div>
           </div>
 
-          {/* Fuel + 0-60 */}
+          {/* Engine Size + Fuel */}
           <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Engine Size</label>
+              <input
+                type="text"
+                className={inp}
+                placeholder="e.g. 2.0L, 5.0L, EV"
+                value={value.engineSize ?? ''}
+                onChange={(e) => update('engineSize', e.target.value)}
+              />
+            </div>
             <div>
               <label className={lbl}>Fuel</label>
               <select
@@ -268,6 +304,10 @@ export default function CarInputForm({ label, value, onChange }: Props) {
                 <option>Flex fuel</option>
               </select>
             </div>
+          </div>
+
+          {/* 0-60 + 60-130 */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={lbl}>0-60 Time (sec)</label>
               <input
@@ -280,10 +320,6 @@ export default function CarInputForm({ label, value, onChange }: Props) {
                 onChange={(e) => numericChange('zeroToSixty', e.target.value)}
               />
             </div>
-          </div>
-
-          {/* 60-130 + Quarter Mile */}
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={lbl}>60-130 Time (sec)</label>
               <input
@@ -298,6 +334,10 @@ export default function CarInputForm({ label, value, onChange }: Props) {
                 }
               />
             </div>
+          </div>
+
+          {/* Quarter Mile + Trap Speed */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={lbl}>Quarter Mile (sec)</label>
               <input
@@ -310,17 +350,13 @@ export default function CarInputForm({ label, value, onChange }: Props) {
                 onChange={(e) => numericChange('quarterMile', e.target.value)}
               />
             </div>
-          </div>
-
-          {/* Trap Speed */}
-          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Trap Speed (mph)</label>
+              <label className={lbl}>Trap Speed (mph)</label>
               <input
                 type="number"
                 step="0.1"
                 min={0}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
+                className={inp}
                 placeholder="e.g. 118"
                 value={value.trapSpeed}
                 onChange={(e) => numericChange('trapSpeed', e.target.value)}
@@ -328,9 +364,46 @@ export default function CarInputForm({ label, value, onChange }: Props) {
             </div>
           </div>
 
+          {/* Electric Motor Count + Hybrid Layout */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Electric Motor Count</label>
+              <select
+                className={sel}
+                value={value.electricMotorCount ?? 'Unknown'}
+                onChange={(e) =>
+                  update('electricMotorCount', e.target.value as ElectricMotorCount)
+                }
+              >
+                <option>Unknown</option>
+                <option>None</option>
+                <option>1 motor</option>
+                <option>2 motors</option>
+                <option>3 motors</option>
+                <option>4+ motors</option>
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Hybrid Layout</label>
+              <select
+                className={sel}
+                value={value.hybridLayout ?? 'Unknown'}
+                onChange={(e) =>
+                  update('hybridLayout', e.target.value as HybridLayout)
+                }
+              >
+                <option>Unknown</option>
+                <option>Mild hybrid</option>
+                <option>Traditional hybrid</option>
+                <option>Plug-in hybrid</option>
+                <option>Performance hybrid</option>
+              </select>
+            </div>
+          </div>
+
           {/* Mods */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">Mods / Notes</label>
+            <label className={lbl}>Mods / Notes</label>
             <textarea
               rows={2}
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"

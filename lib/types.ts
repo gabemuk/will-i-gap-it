@@ -1,5 +1,13 @@
 export type Drivetrain = 'FWD' | 'RWD' | 'AWD' | '4WD';
-export type Transmission = 'Manual' | 'Auto' | 'DCT';
+
+export type Transmission =
+  | 'Manual'
+  | 'Auto'
+  | 'DCT'
+  | 'Single-speed / EV'
+  | 'CVT'
+  | 'Unknown';
+
 export type TireType =
   | 'All-season'
   | 'Summer'
@@ -7,14 +15,41 @@ export type TireType =
   | 'Winter'
   | 'Drag radial'
   | 'Slick';
+
 export type RaceType = 'dig' | '40 roll' | '60 roll' | '60-130' | 'quarter mile';
 export type PowerType = 'Wheel HP' | 'Crank HP' | 'Estimated HP';
 export type Fuel = 'Pump gas' | 'E85' | 'Race gas' | 'Flex fuel' | 'Unknown';
+
 export type Aspiration =
   | 'Naturally aspirated'
   | 'Turbo'
   | 'Supercharged'
   | 'Twin-turbo'
+  | 'Procharged'
+  | 'Nitrous'
+  | 'Electric / None'
+  | 'Unknown';
+
+export type PowertrainType =
+  | 'Gas'
+  | 'Diesel'
+  | 'Hybrid'
+  | 'Electric'
+  | 'Unknown';
+
+export type ElectricMotorCount =
+  | 'None'
+  | '1 motor'
+  | '2 motors'
+  | '3 motors'
+  | '4+ motors'
+  | 'Unknown';
+
+export type HybridLayout =
+  | 'Mild hybrid'
+  | 'Traditional hybrid'
+  | 'Plug-in hybrid'
+  | 'Performance hybrid'
   | 'Unknown';
 
 export interface CarInput {
@@ -41,6 +76,11 @@ export interface CarInput {
   trapSpeed: number | '';
   // Notes
   mods: string;
+  // EV / Hybrid / Powertrain (optional - old saved rows may not have these)
+  powertrainType?: PowertrainType;
+  engineSize?: string;
+  electricMotorCount?: ElectricMotorCount;
+  hybridLayout?: HybridLayout;
 }
 
 export interface CompareResult {

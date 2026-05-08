@@ -23,7 +23,6 @@ function getWheelHP(car: CarInput): number {
   if (car.powerType === 'Crank HP') {
     return hp * (crankToWheel[car.drivetrain] ?? 0.85);
   }
-  // Wheel HP or Estimated HP: use directly
   return hp;
 }
 
@@ -52,18 +51,53 @@ const tireMult: Record<'dig' | 'roll', Record<string, number>> = {
   },
 };
 
+// Single-speed / EV: small consistency bonus (no shift hesitation).
+// CVT: very slight penalty. Unknown: neutral.
 const transMult: Record<'dig' | 'roll', Record<string, number>> = {
-  dig:  { DCT: 1.04, Auto: 0.98, Manual: 0.99 },
-  roll: { DCT: 1.02, Auto: 1.00, Manual: 1.01 },
+  dig:  { DCT: 1.04, 'Single-speed / EV': 1.03, Auto: 0.98, Manual: 0.99, CVT: 0.97, Unknown: 1.00 },
+  roll: { DCT: 1.02, 'Single-speed / EV': 1.01, Auto: 1.00, Manual: 1.01, CVT: 0.99, Unknown: 1.00 },
 };
 
 // Torque bonus for dig and 40-roll races
 function torqueFactor(car: CarInput): number {
   if (car.torque === '' || car.weight === '') return 1.0;
-  // Torque per 1000 lbs; ~300 lb-ft/klb = baseline
   const tpk = (car.torque as number) / ((car.weight as number) / 1000);
   const factor = 1 + (tpk - 300) * 0.00006;
   return Math.max(0.98, Math.min(1.02, factor));
+}
+
+// Small consistency bonus for electric and performance-hybrid powertrains.
+// These are minor adjustments only - HP/weight/tire/drivetrain remain dominant.
+function powertrainBonus(car: CarInput, category: 'dig' | 'roll'): number {
+  let bonus = 1.0;
+
+  const isElectric =
+    car.powertrainType === 'Electric' ||
+    car.transmission === 'Single-speed / EV';
+
+  const isPerformanceHybrid =
+    car.powertrainType === 'Hybrid' &&
+    car.hybridLayout === 'Performance hybrid';
+
+  if (isElectric) {
+    // Instant torque delivery - small consistency bonus off the line
+    if (category === 'dig') bonus *= 1.02;
+    else bonus *= 1.01;
+  } else if (isPerformanceHybrid) {
+    // Electric motor assist at low speed
+    if (category === 'dig') bonus *= 1.01;
+  }
+  // Mild hybrid, Traditional hybrid, Plug-in hybrid: neutral
+  // Gas, Diesel, Unknown: neutral
+
+  // Electric motor count: very small traction/torque-distribution bonus for dig only
+  if (category === 'dig') {
+    const motorCount = car.electricMotorCount;
+    if (motorCount === '2 motors') bonus *= 1.005;
+    else if (motorCount === '3 motors' || motorCount === '4+ motors') bonus *= 1.01;
+  }
+
+  return bonus;
 }
 
 // Score computation
@@ -76,12 +110,14 @@ function computeScore(
   const wt = car.weight as number;
   const ptw = whp / (wt / 1000);
   const tf = applyTorque ? torqueFactor(car) : 1.0;
+  const pb = powertrainBonus(car, category);
   return (
     ptw *
     (drivetrainMult[category][car.drivetrain] ?? 1.0) *
     (tireMult[category][car.tire] ?? 1.0) *
     (transMult[category][car.transmission] ?? 1.0) *
-    tf
+    tf *
+    pb
   );
 }
 
@@ -130,7 +166,7 @@ export function compareCars(
   ) {
     const tA = carA.zeroToSixty as number;
     const tB = carB.zeroToSixty as number;
-    const diff = tB - tA; // positive = A is faster
+    const diff = tB - tA;
 
     if (Math.abs(diff) < 0.2) {
       return {

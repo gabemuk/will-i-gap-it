@@ -28,13 +28,17 @@ function defaultCar(): CarInput {
     aspiration: 'Unknown',
     fuel: 'Unknown',
     drivetrain: 'RWD',
-    transmission: 'Manual',
+    transmission: 'Unknown',
     tire: 'Summer',
     zeroToSixty: '',
     sixtyToOneThirty: '',
     quarterMile: '',
     trapSpeed: '',
     mods: '',
+    powertrainType: 'Unknown',
+    engineSize: '',
+    electricMotorCount: 'Unknown',
+    hybridLayout: 'Unknown',
   };
 }
 
