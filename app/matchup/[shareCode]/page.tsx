@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { getCarLabel } from '@/lib/compare';
 import DidYouGapItForm from '@/components/DidYouGapItForm';
-import type { SavedMatchup } from '@/lib/types';
+import SubmittedResultCard from '@/components/SubmittedResultCard';
+import type { SavedMatchup, RaceResult } from '@/lib/types';
 
 type PageProps = {
   params: Promise<{ shareCode: string }>;
@@ -15,26 +16,43 @@ export default function MatchupPage({ params }: PageProps) {
   const { shareCode } = use(params);
 
   const [matchup, setMatchup] = useState<SavedMatchup | null>(null);
+  const [existingResult, setExistingResult] = useState<RaceResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    async function fetchMatchup() {
-      const { data, error: dbError } = await supabase
+    async function fetchData() {
+      // Fetch matchup
+      const { data: matchupData, error: matchupError } = await supabase
         .from('matchups')
         .select('*')
         .eq('share_code', shareCode)
         .single();
 
-      if (dbError || !data) {
+      if (matchupError || !matchupData) {
         setError('Matchup not found or could not be loaded.');
-      } else {
-        setMatchup(data as SavedMatchup);
+        setLoading(false);
+        return;
       }
+
+      const loaded = matchupData as SavedMatchup;
+      setMatchup(loaded);
+
+      // Fetch any existing result for this matchup
+      const { data: resultData } = await supabase
+        .from('race_results')
+        .select('*')
+        .eq('matchup_id', loaded.id)
+        .maybeSingle();
+
+      if (resultData) {
+        setExistingResult(resultData as RaceResult);
+      }
+
       setLoading(false);
     }
 
-    fetchMatchup();
+    fetchData();
   }, [shareCode]);
 
   if (loading) {
@@ -56,7 +74,7 @@ export default function MatchupPage({ params }: PageProps) {
             {error || 'Matchup not found.'}
           </p>
           <Link href="/" className="text-orange-500 hover:text-orange-400 underline text-sm">
-            ← Back to calculator
+            Back to calculator
           </Link>
         </div>
       </main>
@@ -97,7 +115,7 @@ export default function MatchupPage({ params }: PageProps) {
             Will I Gap It?
           </Link>
           <p className="text-zinc-600 text-xs mt-1">
-            Closed-course matchup · {raceTypeDisplay} Race
+            Closed-course matchup &middot; {raceTypeDisplay} Race
           </p>
         </div>
 
@@ -113,7 +131,7 @@ export default function MatchupPage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* Car cards */}
+        {/* Car cards - read-only specs */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           {[
             { label: 'Car A', car: matchup.car_a, name: carAName, accent: 'text-orange-500' },
@@ -129,10 +147,10 @@ export default function MatchupPage({ params }: PageProps) {
                   {car.horsepower} {car.powerType}
                 </p>
                 <p>
-                  {car.weight} lbs · {car.drivetrain}
+                  {car.weight} lbs &middot; {car.drivetrain}
                 </p>
                 <p>
-                  {car.transmission} · {car.tire}
+                  {car.transmission} &middot; {car.tire}
                 </p>
                 {car.aspiration && car.aspiration !== 'Unknown' && (
                   <p>{car.aspiration}</p>
@@ -162,7 +180,7 @@ export default function MatchupPage({ params }: PageProps) {
               <p className="text-3xl font-bold text-yellow-400">Too Close to Call</p>
             ) : (
               <p className="text-3xl font-bold text-orange-500">
-                {prediction.winner} —{' '}
+                {prediction.winner} &mdash;{' '}
                 <span className="text-white">{winnerLabel}</span>
               </p>
             )}
@@ -203,13 +221,37 @@ export default function MatchupPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Did You Gap It? */}
-        <DidYouGapItForm
-          matchupId={matchup.id}
-          predictedWinner={prediction.winner}
-          carAName={carAName}
-          carBName={carBName}
-        />
+        {/* Result section: form if no result yet, read-only card if already submitted */}
+        {existingResult ? (
+          <SubmittedResultCard
+            result={existingResult}
+            carAName={carAName}
+            carBName={carBName}
+          />
+        ) : (
+          <DidYouGapItForm
+            matchupId={matchup.id}
+            predictedWinner={prediction.winner}
+            carAName={carAName}
+            carBName={carBName}
+          />
+        )}
+
+        {/* Navigation */}
+        <div className="flex gap-3 mt-6">
+          <Link
+            href="/"
+            className="flex-1 text-center py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm font-medium hover:border-orange-500 hover:text-orange-400 transition-colors"
+          >
+            Back to Calculator
+          </Link>
+          <Link
+            href="/results"
+            className="flex-1 text-center py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm font-medium hover:border-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            View Recent Results
+          </Link>
+        </div>
 
         {/* Disclaimer */}
         <p className="text-center text-zinc-600 text-xs mt-8">

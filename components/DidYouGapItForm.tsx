@@ -59,6 +59,19 @@ export default function DidYouGapItForm({
     setSubmitting(true);
     setError('');
 
+    // Guard: check for an existing result before inserting
+    const { data: existing } = await supabase
+      .from('race_results')
+      .select('id')
+      .eq('matchup_id', matchupId)
+      .maybeSingle();
+
+    if (existing) {
+      setSubmitting(false);
+      setError('A result has already been submitted for this matchup. Refresh the page to see it.');
+      return;
+    }
+
     const { error: dbError } = await supabase.from('race_results').insert({
       matchup_id: matchupId,
       actual_winner: actualWinner,
