@@ -115,12 +115,20 @@ export default function Home() {
           <p className="text-zinc-400 text-lg mb-3">
             Closed-course car matchup calculator.
           </p>
-          <Link
-            href="/results"
-            className="inline-block text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2"
-          >
-            View Recent Results
-          </Link>
+          <div className="flex gap-4 justify-center">
+            <Link
+              href="/results"
+              className="inline-block text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2"
+            >
+              View Recent Results
+            </Link>
+            <Link
+              href="/leaderboard"
+              className="inline-block text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2"
+            >
+              Leaderboard
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">

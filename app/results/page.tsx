@@ -179,6 +179,12 @@ export default function ResultsPage() {
           <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30 cursor-default">
             Recent Results
           </span>
+          <Link
+            href="/leaderboard"
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
+          >
+            Leaderboard
+          </Link>
         </div>
 
         {/* Loading */}
