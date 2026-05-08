@@ -50,3 +50,26 @@ export interface CompareResult {
   explanation: string;
   neededAdvantage: string;
 }
+
+// Database row types (Supabase)
+
+export interface SavedMatchup {
+  id: string;
+  share_code: string;
+  car_a: CarInput;
+  car_b: CarInput;
+  race_type: RaceType;
+  prediction: CompareResult;
+  created_at: string;
+}
+
+export interface RaceResult {
+  id: string;
+  matchup_id: string;
+  actual_winner: string;
+  actual_gap: string;
+  result_notes: string | null;
+  proof_type: string;
+  prediction_was_correct: boolean | null;
+  created_at: string;
+}
