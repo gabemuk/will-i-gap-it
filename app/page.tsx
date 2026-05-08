@@ -1,65 +1,141 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import CarInputForm from '@/components/CarInputForm';
+import ResultCard from '@/components/ResultCard';
+import { CarInput, CompareResult, RaceType } from '@/lib/types';
+import { compareCars, getCarLabel } from '@/lib/compare';
+
+const RACE_TYPES: RaceType[] = ['dig', '40 roll', '60 roll', '60-130', 'quarter mile'];
+
+const MIN_YEAR = 1886;
+const MAX_YEAR = new Date().getFullYear() + 1;
+
+function defaultCar(): CarInput {
+  return {
+    make: '',
+    model: '',
+    year: '',
+    trim: '',
+    horsepower: '',
+    powerType: 'Wheel HP',
+    torque: '',
+    weight: '',
+    aspiration: 'Unknown',
+    fuel: 'Unknown',
+    drivetrain: 'RWD',
+    transmission: 'Manual',
+    tire: 'Summer',
+    zeroToSixty: '',
+    sixtyToOneThirty: '',
+    quarterMile: '',
+    trapSpeed: '',
+    mods: '',
+  };
+}
+
+function validateCar(car: CarInput, label: string): string | null {
+  if (!car.make.trim()) return `${label}: Make is required.`;
+  if (!car.model.trim()) return `${label}: Model is required.`;
+  if (car.year === '') return `${label}: Year is required.`;
+  const yr = Number(car.year);
+  if (!Number.isInteger(yr) || yr < MIN_YEAR || yr > MAX_YEAR)
+    return `${label}: Year must be between ${MIN_YEAR} and ${MAX_YEAR}.`;
+  if (car.horsepower === '' || Number(car.horsepower) <= 0)
+    return `${label}: Horsepower must be greater than zero.`;
+  if (car.weight === '' || Number(car.weight) <= 0)
+    return `${label}: Weight must be greater than zero.`;
+  return null;
+}
 
 export default function Home() {
+  const [carA, setCarA] = useState<CarInput>(defaultCar());
+  const [carB, setCarB] = useState<CarInput>(defaultCar());
+  const [raceType, setRaceType] = useState<RaceType>('dig');
+  const [result, setResult] = useState<CompareResult | null>(null);
+  const [error, setError] = useState('');
+
+  function handleCompare() {
+    const errA = validateCar(carA, 'Car A');
+    if (errA) { setError(errA); setResult(null); return; }
+    const errB = validateCar(carB, 'Car B');
+    if (errB) { setError(errB); setResult(null); return; }
+
+    setError('');
+    setResult(compareCars(carA, carB, raceType));
+
+    setTimeout(() => {
+      document.getElementById('result-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+  }
+
+  const nameA = getCarLabel(carA) || 'Car A';
+  const nameB = getCarLabel(carB) || 'Car B';
+
+  const btnClass = (rt: RaceType) =>
+    rt === raceType
+      ? 'px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-orange-500 text-white'
+      : 'px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-zinc-800 text-zinc-300 hover:bg-zinc-700';
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-zinc-950 text-white">
+      <div className="max-w-5xl mx-auto px-4 py-10">
+
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-black tracking-tight text-orange-500 mb-2">
+            Will I Gap It?
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-zinc-400 text-lg">
+            Closed-course car matchup calculator.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <CarInputForm label="Car A" value={carA} onChange={setCarA} />
+          <CarInputForm label="Car B" value={carB} onChange={setCarB} />
         </div>
-      </main>
-    </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-5">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">
+            Race Type
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {RACE_TYPES.map((rt) => (
+              <button
+                key={rt}
+                onClick={() => setRaceType(rt)}
+                className={btnClass(rt)}
+              >
+                {rt.charAt(0).toUpperCase() + rt.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={handleCompare}
+          className="w-full py-4 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-lg rounded-xl transition-colors mb-5"
+        >
+          Compare Cars
+        </button>
+
+        {error && (
+          <div className="bg-red-950/60 border border-red-700/60 rounded-xl p-4 mb-5 text-red-300 text-sm">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div id="result-section">
+            <ResultCard result={result} carAName={nameA} carBName={nameB} />
+          </div>
+        )}
+
+        <p className="text-center text-zinc-600 text-xs mt-10">
+          For closed-course and track comparison only. Results are estimates and
+          do not guarantee real-world outcomes.
+        </p>
+      </div>
+    </main>
   );
 }
