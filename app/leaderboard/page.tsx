@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import AuthNav from '@/components/AuthNav';
 import { supabase } from '@/lib/supabase';
@@ -12,8 +12,18 @@ import {
   getVerificationBadgeClass,
 } from '@/lib/format';
 import { buildLeaderboards } from '@/lib/leaderboard';
+import {
+  resultMatchesRaceType,
+  resultMatchesProofLevel,
+  resultInTimeWindow,
+  type RaceTypeFilter,
+  type ProofLevelFilter,
+  type TimeWindowFilter,
+} from '@/lib/resultFilters';
 import type { ResultWithMatchup } from '@/lib/types';
 import type { LeaderboardData } from '@/lib/leaderboard';
+
+// --- Section wrapper ---
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -24,31 +34,27 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+// --- Leaderboard sections ---
+
 function MostWinsSection({ data }: { data: LeaderboardData }) {
   if (data.mostWins.length === 0) {
     return (
       <Section title="Most Reported Wins">
-        <p className="text-zinc-500 text-sm">No win data yet.</p>
+        <p className="text-zinc-500 text-sm">No win data for these filters.</p>
       </Section>
     );
   }
   return (
     <Section title="Most Reported Wins">
-      <p className="text-xs text-zinc-600 mb-3 -mt-1">
-        Similar builds are grouped using normalized year/make/model/trim data.
-      </p>
+      <p className="text-xs text-zinc-600 mb-3 -mt-1">Similar builds are grouped using normalized year/make/model/trim data.</p>
       <div className="space-y-2">
         {data.mostWins.map((entry, i) => (
           <div key={entry.buildKey} className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-3">
-            <span className="text-lg font-black text-zinc-500 w-7 shrink-0">
-              #{i + 1}
-            </span>
+            <span className="text-lg font-black text-zinc-500 w-7 shrink-0">#{i + 1}</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate">{entry.displayLabel}</p>
               {entry.latestRaceType && (
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Latest: {formatRaceType(entry.latestRaceType)}
-                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">Latest: {formatRaceType(entry.latestRaceType)}</p>
               )}
             </div>
             <div className="flex items-center gap-3 shrink-0">
@@ -89,9 +95,8 @@ function PredictionsSection({ data }: { data: LeaderboardData }) {
           <p className="text-xs text-zinc-500 mt-1">Accuracy</p>
         </div>
       </div>
-
       {recentCorrect.length === 0 ? (
-        <p className="text-zinc-500 text-sm">No verified correct predictions yet.</p>
+        <p className="text-zinc-500 text-sm">No correct predictions for these filters.</p>
       ) : (
         <div className="space-y-2">
           <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Recent Correct Predictions</p>
@@ -105,12 +110,8 @@ function PredictionsSection({ data }: { data: LeaderboardData }) {
                     <span className="text-orange-400">{entry.carBLabel}</span>
                   </p>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                    <p className="text-xs text-zinc-500">
-                      Predicted: <span className="text-green-400">{entry.predictedWinner}</span>
-                    </p>
-                    <p className="text-xs text-zinc-500">
-                      Actual: <span className="text-zinc-300">{entry.actualWinner}</span>
-                    </p>
+                    <p className="text-xs text-zinc-500">Predicted: <span className="text-green-400">{entry.predictedWinner}</span></p>
+                    <p className="text-xs text-zinc-500">Actual: <span className="text-zinc-300">{entry.actualWinner}</span></p>
                     <p className="text-xs text-zinc-500">{formatRaceType(entry.raceType)}</p>
                   </div>
                   <div className="mt-1.5">
@@ -140,7 +141,7 @@ function BiggestGapsSection({ data }: { data: LeaderboardData }) {
   if (data.biggestGaps.length === 0) {
     return (
       <Section title="Biggest Reported Gaps">
-        <p className="text-zinc-500 text-sm">No gap data yet.</p>
+        <p className="text-zinc-500 text-sm">No gap data for these filters.</p>
       </Section>
     );
   }
@@ -163,12 +164,8 @@ function BiggestGapsSection({ data }: { data: LeaderboardData }) {
                   <span className="text-orange-400">{entry.carBLabel}</span>
                 </p>
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                  <p className="text-xs text-zinc-500">
-                    Winner: <span className="text-zinc-300">{entry.actualWinner}</span>
-                  </p>
-                  <p className="text-xs text-zinc-500">
-                    Proof: <span className="text-zinc-400">{formatProofType(entry.proofType)}</span>
-                  </p>
+                  <p className="text-xs text-zinc-500">Winner: <span className="text-zinc-300">{entry.actualWinner}</span></p>
+                  <p className="text-xs text-zinc-500">Proof: <span className="text-zinc-400">{formatProofType(entry.proofType)}</span></p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap mt-1.5">
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getVerificationBadgeClass(entry.verificationStatus)}`}>
@@ -238,10 +235,72 @@ function ActivitySection({ data }: { data: LeaderboardData }) {
   );
 }
 
+// --- Filter panel ---
+
+interface LeaderboardFilters {
+  raceType: RaceTypeFilter;
+  proofLevel: ProofLevelFilter;
+  timeWindow: TimeWindowFilter;
+}
+
+const DEFAULT_FILTERS: LeaderboardFilters = {
+  raceType: 'all',
+  proofLevel: 'all',
+  timeWindow: 'all',
+};
+
+const selectCls = 'bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500 transition-colors cursor-pointer w-full';
+
+interface LeaderboardFilterPanelProps {
+  filters: LeaderboardFilters;
+  onChange: (key: keyof LeaderboardFilters, value: string) => void;
+  onClear: () => void;
+  hasActiveFilters: boolean;
+}
+
+function LeaderboardFilterPanel({ filters, onChange, onClear, hasActiveFilters }: LeaderboardFilterPanelProps) {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Filter Results</span>
+        {hasActiveFilters && (
+          <button onClick={onClear} className="text-xs text-orange-500 hover:text-orange-400 font-semibold transition-colors">
+            Clear filters
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <select value={filters.raceType} onChange={(e) => onChange('raceType', e.target.value)} className={selectCls}>
+          <option value="all">All Race Types</option>
+          <option value="dig">Dig</option>
+          <option value="40 roll">40 Roll</option>
+          <option value="60 roll">60 Roll</option>
+          <option value="60-130">60-130</option>
+          <option value="quarter mile">Quarter Mile</option>
+        </select>
+        <select value={filters.proofLevel} onChange={(e) => onChange('proofLevel', e.target.value)} className={selectCls}>
+          <option value="all">All Results</option>
+          <option value="proof_linked_only">Proof Linked Only</option>
+          <option value="proof_claimed_or_linked">Proof Claimed or Linked</option>
+          <option value="exclude_disputed">Exclude Disputed</option>
+        </select>
+        <select value={filters.timeWindow} onChange={(e) => onChange('timeWindow', e.target.value)} className={selectCls}>
+          <option value="all">All Time</option>
+          <option value="7days">Last 7 Days</option>
+          <option value="30days">Last 30 Days</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+// --- Page ---
+
 export default function LeaderboardPage() {
-  const [leaderboard, setLeaderboard] = useState<LeaderboardData | null>(null);
+  const [rawResults, setRawResults] = useState<ResultWithMatchup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filters, setFilters] = useState<LeaderboardFilters>(DEFAULT_FILTERS);
 
   useEffect(() => {
     async function fetchData() {
@@ -272,14 +331,42 @@ export default function LeaderboardPage() {
       if (dbError) {
         setError('Could not load leaderboard data. Please try again later.');
       } else {
-        const results = (data ?? []) as unknown as ResultWithMatchup[];
-        setLeaderboard(buildLeaderboards(results));
+        setRawResults((data ?? []) as unknown as ResultWithMatchup[]);
       }
       setLoading(false);
     }
     fetchData();
   }, []);
 
+  function handleFilterChange(key: keyof LeaderboardFilters, value: string) {
+    setFilters((prev) => {
+      const next = { ...prev };
+      (next as Record<string, string>)[key] = value;
+      return next;
+    });
+  }
+
+  function handleClearFilters() {
+    setFilters(DEFAULT_FILTERS);
+  }
+
+  const hasActiveFilters =
+    filters.raceType !== 'all' ||
+    filters.proofLevel !== 'all' ||
+    filters.timeWindow !== 'all';
+
+  const leaderboard = useMemo(() => {
+    if (rawResults.length === 0) return null;
+    const filtered = rawResults.filter(
+      (r) =>
+        resultMatchesRaceType(r, filters.raceType) &&
+        resultMatchesProofLevel(r, filters.proofLevel) &&
+        resultInTimeWindow(r, filters.timeWindow),
+    );
+    return buildLeaderboards(filtered);
+  }, [rawResults, filters]);
+
+  const hasNoData = rawResults.length === 0;
   const isEmpty =
     leaderboard !== null &&
     leaderboard.totalResults === 0 &&
@@ -293,15 +380,9 @@ export default function LeaderboardPage() {
           <Link href="/" className="text-orange-500 font-black text-2xl hover:text-orange-400 transition-colors">
             Will I Gap It?
           </Link>
-          <h1 className="text-4xl font-black tracking-tight text-white mt-4 mb-1">
-            Leaderboard
-          </h1>
-          <p className="text-zinc-400 text-sm mb-1">
-            Top submitted closed-course matchup outcomes.
-          </p>
-          <p className="text-zinc-600 text-xs">
-            Rankings are based on user-submitted results and may be unverified.
-          </p>
+          <h1 className="text-4xl font-black tracking-tight text-white mt-4 mb-1">Leaderboard</h1>
+          <p className="text-zinc-400 text-sm mb-1">Top submitted closed-course matchup outcomes.</p>
+          <p className="text-zinc-600 text-xs">Rankings are based on user-submitted results and may be unverified.</p>
         </div>
 
         <div className="flex gap-3 mb-8 justify-center flex-wrap items-center">
@@ -329,30 +410,48 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        {!loading && !error && isEmpty && (
+        {!loading && !error && hasNoData && (
           <div className="text-center py-20 bg-zinc-900 border border-zinc-800 rounded-xl">
             <p className="text-zinc-400 text-base font-semibold mb-2">No leaderboard data yet.</p>
-            <p className="text-zinc-600 text-sm mb-6 px-6">
-              Submit actual results from saved matchups to start ranking builds.
-            </p>
+            <p className="text-zinc-600 text-sm mb-6 px-6">Submit actual results from saved matchups to start ranking builds.</p>
             <Link href="/" className="inline-block px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-sm">
               Go to Calculator
             </Link>
           </div>
         )}
 
-        {!loading && !error && leaderboard && !isEmpty && (
+        {!loading && !error && !hasNoData && (
           <>
-            <ActivitySection data={leaderboard} />
-            <MostWinsSection data={leaderboard} />
-            <PredictionsSection data={leaderboard} />
-            <BiggestGapsSection data={leaderboard} />
+            <LeaderboardFilterPanel
+              filters={filters}
+              onChange={handleFilterChange}
+              onClear={handleClearFilters}
+              hasActiveFilters={hasActiveFilters}
+            />
+
+            {isEmpty ? (
+              <div className="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl">
+                <p className="text-zinc-400 text-base font-semibold mb-2">No results match these filters.</p>
+                <button
+                  onClick={handleClearFilters}
+                  className="mt-3 text-sm text-orange-500 hover:text-orange-400 font-semibold transition-colors underline underline-offset-2"
+                >
+                  Clear filters
+                </button>
+              </div>
+            ) : leaderboard ? (
+              <>
+                <ActivitySection data={leaderboard} />
+                <MostWinsSection data={leaderboard} />
+                <PredictionsSection data={leaderboard} />
+                <BiggestGapsSection data={leaderboard} />
+              </>
+            ) : null}
           </>
         )}
 
         <p className="text-center text-zinc-600 text-xs mt-6">
-          For closed-course and track comparison only. Results are estimates and
-          do not guarantee real-world outcomes.
+          For closed-course and track comparison only. Results are estimates and do not guarantee real-world outcomes.
         </p>
 
       </div>
