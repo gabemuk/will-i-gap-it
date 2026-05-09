@@ -102,6 +102,10 @@ export interface SavedMatchup {
   prediction: CompareResult;
   created_at: string;
   user_id?: string | null;
+  // Learning / build-key columns (added in learning_foundation migration)
+  car_a_build_key?: string | null;
+  car_b_build_key?: string | null;
+  prediction_version?: string | null;
 }
 
 export interface Profile {
@@ -130,6 +134,14 @@ export interface RaceResult {
   prediction_was_correct: boolean | null;
   created_at: string;
   user_id?: string | null;
+  // Learning / quality columns (added in learning_foundation migration)
+  // Optional so existing rows without these columns remain compatible.
+  quality_score?: number | null;
+  learning_weight?: number | null;
+  review_status?: string | null;
+  hidden_from_learning?: boolean | null;
+  hidden_from_leaderboard?: boolean | null;
+  dispute_count?: number | null;
 }
 
 export interface MatchupSummary {

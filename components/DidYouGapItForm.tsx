@@ -3,6 +3,13 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { CompareResult, VerificationStatus } from '@/lib/types';
+import {
+  calculateResultQualityScore,
+  calculateLearningWeight,
+  getReviewStatus,
+  shouldHideFromLearning,
+  shouldHideFromLeaderboard,
+} from '@/lib/dataQuality';
 
 const ACTUAL_GAPS = [
   'Dead even',
@@ -75,6 +82,24 @@ export default function DidYouGapItForm({
     const normalizedProofType = proofType.toLowerCase().replace(/ /g, '_');
     const verificationStatus = computeVerificationStatus(normalizedProofType, trimmedUrl);
 
+    // ── Compute quality / learning fields ─────────────────────────────────
+    const qualityInput = {
+      proofType: normalizedProofType,
+      verificationStatus,
+      proofUrl: trimmedUrl || null,
+      actualGap,
+      predictionWasCorrect,
+      resultNotes: resultNotes.trim() || null,
+      // carA / carB are not available in this component; quality functions
+      // handle undefined gracefully and skip car-field scoring.
+    };
+
+    const qualityScore       = calculateResultQualityScore(qualityInput);
+    const learningWeight     = calculateLearningWeight(qualityInput);
+    const reviewStatus       = getReviewStatus(qualityInput);
+    const hiddenFromLearning    = shouldHideFromLearning(reviewStatus);
+    const hiddenFromLeaderboard = shouldHideFromLeaderboard(reviewStatus);
+
     setSubmitting(true);
     setError('');
 
@@ -94,25 +119,63 @@ export default function DidYouGapItForm({
     // Attach user_id if logged in; anonymous submissions still work (user_id = null)
     const { data: { user } } = await supabase.auth.getUser();
 
-    const { error: dbError } = await supabase.from('race_results').insert({
-      matchup_id: matchupId,
-      actual_winner: actualWinner,
-      actual_gap: actualGap,
-      proof_type: normalizedProofType,
-      proof_url: trimmedUrl || null,
-      verification_status: verificationStatus,
-      result_notes: resultNotes.trim() || null,
+    // ── Base payload (always safe) ────────────────────────────────────────
+    const basePayload = {
+      matchup_id:           matchupId,
+      actual_winner:        actualWinner,
+      actual_gap:           actualGap,
+      proof_type:           normalizedProofType,
+      proof_url:            trimmedUrl || null,
+      verification_status:  verificationStatus,
+      result_notes:         resultNotes.trim() || null,
       prediction_was_correct: predictionWasCorrect,
-      user_id: user?.id ?? null,
-    });
+      user_id:              user?.id ?? null,
+    };
 
-    setSubmitting(false);
+    // ── Extended payload with learning columns ────────────────────────────
+    const extendedPayload = {
+      ...basePayload,
+      quality_score:           qualityScore,
+      learning_weight:         learningWeight,
+      review_status:           reviewStatus,
+      hidden_from_learning:    hiddenFromLearning,
+      hidden_from_leaderboard: hiddenFromLeaderboard,
+    };
+
+    // ── Try insert with learning fields; fall back if columns are missing ──
+    const { error: dbError } = await supabase
+      .from('race_results')
+      .insert(extendedPayload);
 
     if (dbError) {
-      setError('Could not save your result. Please try again.');
-      return;
+      const isMissingColumn =
+        dbError.code === '42703' ||
+        (typeof dbError.message === 'string' &&
+          (dbError.message.toLowerCase().includes('column') ||
+           dbError.message.toLowerCase().includes('does not exist')));
+
+      if (isMissingColumn) {
+        console.warn(
+          'Learning columns missing; retrying result insert without learning fields.',
+          dbError
+        );
+        const { error: fallbackError } = await supabase
+          .from('race_results')
+          .insert(basePayload);
+
+        if (fallbackError) {
+          setSubmitting(false);
+          setError('Could not save your result. Please try again.');
+          return;
+        }
+      } else {
+        setSubmitting(false);
+        setError('Could not save your result. Please try again.');
+        return;
+      }
     }
 
+    setSubmitting(false);
     setSubmitted(true);
   }
 
@@ -221,6 +284,10 @@ export default function DidYouGapItForm({
       >
         {submitting ? 'Saving...' : 'Submit Result'}
       </button>
+
+      <p className="text-xs text-zinc-600 text-center mt-3">
+        Low-quality or disputed results may be excluded from future prediction tuning.
+      </p>
     </div>
   );
 }

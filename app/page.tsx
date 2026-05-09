@@ -10,6 +10,7 @@ import { CarInput, CompareResult, RaceType } from '@/lib/types';
 import { compareCars, getCarLabel } from '@/lib/compare';
 import { supabase } from '@/lib/supabase';
 import { generateShareCode } from '@/lib/shareCode';
+import { getBuildKey } from '@/lib/normalize';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -97,19 +98,56 @@ export default function Home() {
     // Attach user_id if logged in; anonymous saves still work (user_id = null)
     const { data: { user } } = await supabase.auth.getUser();
 
-    const { error: dbError } = await supabase.from('matchups').insert({
+    // ── Base payload (always safe, works before migration) ─────────────────
+    const baseMatchupPayload = {
       share_code: shareCode,
       car_a: carA,
       car_b: carB,
       race_type: raceType,
       prediction: result,
       user_id: user?.id ?? null,
-    });
+    };
+
+    // ── Extended payload with build keys (added in learning_foundation) ────
+    const extendedMatchupPayload = {
+      ...baseMatchupPayload,
+      car_a_build_key:    getBuildKey(carA),
+      car_b_build_key:    getBuildKey(carB),
+      prediction_version: 'v1',
+    };
+
+    const { error: dbError } = await supabase
+      .from('matchups')
+      .insert(extendedMatchupPayload);
+
     if (dbError) {
-      setSaveError('Could not save matchup. Check your Supabase connection and try again.');
-      setSaving(false);
-      return;
+      const isMissingColumn =
+        dbError.code === '42703' ||
+        (typeof dbError.message === 'string' &&
+          (dbError.message.toLowerCase().includes('column') ||
+           dbError.message.toLowerCase().includes('does not exist')));
+
+      if (isMissingColumn) {
+        console.warn(
+          'Build key columns missing; retrying matchup insert without build keys.',
+          dbError
+        );
+        const { error: fallbackError } = await supabase
+          .from('matchups')
+          .insert(baseMatchupPayload);
+
+        if (fallbackError) {
+          setSaveError('Could not save matchup. Check your Supabase connection and try again.');
+          setSaving(false);
+          return;
+        }
+      } else {
+        setSaveError('Could not save matchup. Check your Supabase connection and try again.');
+        setSaving(false);
+        return;
+      }
     }
+
     router.push(`/matchup/${shareCode}`);
   }
 
