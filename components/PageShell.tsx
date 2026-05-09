@@ -38,6 +38,12 @@ export default function PageShell({ children, maxWidth = 'max-w-5xl' }: PageShel
             >
               Leaderboard
             </Link>
+            <Link
+              href="/insights"
+              className="text-xs text-zinc-400 hover:text-orange-400 transition-colors hidden sm:block"
+            >
+              Insights
+            </Link>
             <AuthNav />
           </div>
         </div>
