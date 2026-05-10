@@ -144,6 +144,29 @@ export interface RaceResult {
   dispute_count?: number | null;
 }
 
+// Result flagging / reporting
+
+export type ResultReportReason =
+  | 'fake_result'
+  | 'wrong_cars'
+  | 'wrong_winner'
+  | 'bad_proof_link'
+  | 'private_info_shown'
+  | 'spam_or_joke'
+  | 'unsafe_content'
+  | 'duplicate'
+  | 'other';
+
+export interface ResultReport {
+  id: string;
+  race_result_id: string;
+  reason: ResultReportReason;
+  note: string | null;
+  reporter_user_id: string | null;
+  reporter_fingerprint: string | null;
+  created_at: string;
+}
+
 export interface MatchupSummary {
   share_code: string;
   car_a: CarInput;

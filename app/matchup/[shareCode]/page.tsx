@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { getCarLabel } from '@/lib/compare';
 import DidYouGapItForm from '@/components/DidYouGapItForm';
 import SubmittedResultCard from '@/components/SubmittedResultCard';
+import FlagResultForm from '@/components/FlagResultForm';
 import type { SavedMatchup, RaceResult } from '@/lib/types';
 
 type PageProps = {
@@ -213,11 +214,14 @@ export default function MatchupPage({ params }: PageProps) {
         </div>
 
         {existingResult ? (
-          <SubmittedResultCard
-            result={existingResult}
-            carAName={carAName}
-            carBName={carBName}
-          />
+          <>
+            <SubmittedResultCard
+              result={existingResult}
+              carAName={carAName}
+              carBName={carBName}
+            />
+            <FlagResultForm raceResultId={existingResult.id} />
+          </>
         ) : (
           <DidYouGapItForm
             matchupId={matchup.id}

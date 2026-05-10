@@ -45,6 +45,7 @@ export interface PredictionAccuracy {
 }
 
 export interface BigGapEntry {
+  raceResultId: string;
   carALabel: string;
   carBLabel: string;
   actualWinner: string;
@@ -172,6 +173,7 @@ export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData
     .map((r) => {
       const matchup = r.matchups!;
       return {
+        raceResultId: r.id,
         carALabel: getCarLabel(matchup.car_a),
         carBLabel: getCarLabel(matchup.car_b),
         actualWinner: r.actual_winner,

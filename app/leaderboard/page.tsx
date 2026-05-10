@@ -22,6 +22,7 @@ import {
 } from '@/lib/resultFilters';
 import type { ResultWithMatchup } from '@/lib/types';
 import type { LeaderboardData } from '@/lib/leaderboard';
+import FlagResultForm from '@/components/FlagResultForm';
 
 // --- Section wrapper ---
 
@@ -192,6 +193,7 @@ function BiggestGapsSection({ data }: { data: LeaderboardData }) {
                 </Link>
               )}
             </div>
+            <FlagResultForm raceResultId={entry.raceResultId} />
           </div>
         ))}
       </div>

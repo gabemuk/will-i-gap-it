@@ -26,6 +26,7 @@ import {
   type SortOrder,
 } from '@/lib/resultFilters';
 import type { ResultWithMatchup } from '@/lib/types';
+import FlagResultForm from '@/components/FlagResultForm';
 
 // --- Sub-components ---
 
@@ -128,6 +129,8 @@ function ResultEntry({ result }: { result: ResultWithMatchup }) {
           </Link>
         )}
       </div>
+
+      <FlagResultForm raceResultId={result.id} />
     </div>
   );
 }
