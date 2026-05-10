@@ -21,7 +21,7 @@ import {
   type TimeWindowFilter,
 } from '@/lib/resultFilters';
 import type { ResultWithMatchup } from '@/lib/types';
-import type { LeaderboardData } from '@/lib/leaderboard';
+import type { LeaderboardData, DriverEntry, WinEntry, ModelEntry } from '@/lib/leaderboard';
 import FlagResultForm from '@/components/FlagResultForm';
 import { buildProfileMap, collectUserIds, getSubmitterName } from '@/lib/profileDisplay';
 
@@ -250,6 +250,96 @@ function ActivitySection({ data }: { data: LeaderboardData }) {
   );
 }
 
+// --- Community leaderboards ---
+
+function CommunityLeaderboardsSection({
+  data,
+  profileMap,
+}: {
+  data: LeaderboardData;
+  profileMap: Map<string, string>;
+}) {
+  const topDrivers: DriverEntry[] = data.topDrivers;
+  const topBuilds: WinEntry[] = data.topBuilds;
+  const topModels: ModelEntry[] = data.topModels;
+
+  return (
+    <Section title="Community Leaderboards">
+      {/* Top Drivers */}
+      <div className="mb-5">
+        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Top Drivers</p>
+        {topDrivers.length === 0 ? (
+          <p className="text-zinc-600 text-sm">No driver data for these filters.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {topDrivers.map((entry, i) => {
+              const name = profileMap.get(entry.userId) || 'Anonymous';
+              return (
+                <div
+                  key={entry.userId}
+                  className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-2.5"
+                >
+                  <span className="text-sm font-black text-zinc-500 w-6 shrink-0">#{i + 1}</span>
+                  <span className="flex-1 text-sm font-semibold text-white truncate">{name}</span>
+                  <span className="text-sm font-black text-orange-400 shrink-0">
+                    {entry.wins} {entry.wins === 1 ? 'win' : 'wins'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Top Builds */}
+      <div className="mb-5">
+        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Top Builds</p>
+        {topBuilds.length === 0 ? (
+          <p className="text-zinc-600 text-sm">No build data for these filters.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {topBuilds.map((entry, i) => (
+              <div
+                key={entry.buildKey}
+                className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-2.5"
+              >
+                <span className="text-sm font-black text-zinc-500 w-6 shrink-0">#{i + 1}</span>
+                <span className="flex-1 text-sm font-semibold text-white truncate">{entry.displayLabel}</span>
+                <span className="text-sm font-black text-orange-400 shrink-0">
+                  {entry.wins} {entry.wins === 1 ? 'win' : 'wins'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Top Models */}
+      <div>
+        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Top Models</p>
+        {topModels.length === 0 ? (
+          <p className="text-zinc-600 text-sm">No model data for these filters.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {topModels.map((entry, i) => (
+              <div
+                key={entry.modelKey}
+                className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-2.5"
+              >
+                <span className="text-sm font-black text-zinc-500 w-6 shrink-0">#{i + 1}</span>
+                <span className="flex-1 text-sm font-semibold text-white truncate">{entry.displayLabel}</span>
+                <span className="text-sm font-black text-orange-400 shrink-0">
+                  {entry.wins} {entry.wins === 1 ? 'win' : 'wins'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 // --- Filter panel ---
 
 interface LeaderboardFilters {
@@ -472,6 +562,7 @@ export default function LeaderboardPage() {
             ) : leaderboard ? (
               <>
                 <ActivitySection data={leaderboard} />
+                <CommunityLeaderboardsSection data={leaderboard} profileMap={profileMap} />
                 <MostWinsSection data={leaderboard} />
                 <PredictionsSection data={leaderboard} profileMap={profileMap} />
                 <BiggestGapsSection data={leaderboard} profileMap={profileMap} />

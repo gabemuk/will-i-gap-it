@@ -1,6 +1,6 @@
 import type { ResultWithMatchup } from './types';
 import { getCarLabel } from './compare';
-import { getBuildKey, getBuildDisplayLabel } from './normalize';
+import { getBuildKey, getBuildDisplayLabel, normalizeText, normalizeTrim } from './normalize';
 
 // Gap severity ranking (higher = bigger gap)
 const GAP_SEVERITY: Record<string, number> = {
@@ -68,6 +68,17 @@ export interface RaceTypeCounts {
   'quarter mile': number;
 }
 
+export interface DriverEntry {
+  userId: string;
+  wins: number;
+}
+
+export interface ModelEntry {
+  modelKey: string;
+  displayLabel: string;
+  wins: number;
+}
+
 export interface LeaderboardData {
   mostWins: WinEntry[];
   predictionAccuracy: PredictionAccuracy;
@@ -75,6 +86,9 @@ export interface LeaderboardData {
   biggestGaps: BigGapEntry[];
   totalResults: number;
   raceTypeCounts: RaceTypeCounts;
+  topDrivers: DriverEntry[];
+  topBuilds: WinEntry[];
+  topModels: ModelEntry[];
 }
 
 export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData {
@@ -193,6 +207,56 @@ export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData
     .sort((a, b) => b.severity - a.severity || b.createdAt.localeCompare(a.createdAt))
     .slice(0, 10);
 
+  // Community: Top Builds (top 5 from mostWins)
+  const topBuilds: WinEntry[] = mostWins.slice(0, 5);
+
+  // Community: Top Drivers (group wins by user_id, exclude null/tie)
+  const driverMap = new Map<string, number>();
+  for (const r of results) {
+    if (r.actual_winner === 'Too close / tie') continue;
+    if (!r.user_id) continue;
+    if (!r.matchups) continue;
+    driverMap.set(r.user_id, (driverMap.get(r.user_id) ?? 0) + 1);
+  }
+  const topDrivers: DriverEntry[] = Array.from(driverMap.entries())
+    .map(([userId, wins]) => ({ userId, wins }))
+    .sort((a, b) => b.wins - a.wins)
+    .slice(0, 5);
+
+  // Community: Top Models (group by make+model+trim, no year, exclude ties)
+  const modelMap = new Map<string, { displayLabel: string; wins: number; latestDate: string }>();
+  for (const r of results) {
+    if (r.actual_winner === 'Too close / tie') continue;
+    const matchup = r.matchups;
+    if (!matchup) continue;
+    const winningCar = r.actual_winner === 'Car A' ? matchup.car_a : matchup.car_b;
+    const rawLabel = getCarLabel(winningCar);
+    if (!rawLabel || rawLabel === 'Car') continue;
+
+    const normMake = normalizeText(winningCar.make) || 'unknown';
+    const normModel = normalizeText(winningCar.model) || 'unknown';
+    const normTrimVal = winningCar.trim.trim() ? (normalizeTrim(winningCar.trim) || 'base') : 'base';
+    const modelKey = `${normMake}|${normModel}|${normTrimVal}`;
+
+    const displayParts: string[] = [];
+    if (winningCar.make.trim()) displayParts.push(winningCar.make.trim());
+    if (winningCar.model.trim()) displayParts.push(winningCar.model.trim());
+    if (winningCar.trim.trim()) displayParts.push(winningCar.trim.trim());
+    const displayLabel = displayParts.join(' ').replace(/\s+/g, ' ').trim() || 'Unknown';
+
+    const existing = modelMap.get(modelKey);
+    const isNewer = !existing || r.created_at > existing.latestDate;
+    modelMap.set(modelKey, {
+      displayLabel: isNewer ? displayLabel : (existing?.displayLabel ?? displayLabel),
+      wins: (existing?.wins ?? 0) + 1,
+      latestDate: isNewer ? r.created_at : (existing?.latestDate ?? r.created_at),
+    });
+  }
+  const topModels: ModelEntry[] = Array.from(modelMap.entries())
+    .map(([modelKey, v]) => ({ modelKey, displayLabel: v.displayLabel, wins: v.wins }))
+    .sort((a, b) => b.wins - a.wins)
+    .slice(0, 5);
+
   // 4. Race type counts
   const raceTypeCounts: RaceTypeCounts = {
     dig: 0,
@@ -216,5 +280,8 @@ export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData
     biggestGaps,
     totalResults,
     raceTypeCounts,
+    topDrivers,
+    topBuilds,
+    topModels,
   };
 }
