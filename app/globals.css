@@ -1,8 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
+  /* Legacy tokens — kept for backward compat with any direct references */
+  --background: #0A0A0D;
+  --foreground: #F5F5F8;
+
+  /* Fonts — next/font applies the raw family strings via --font-inter / --font-barlow /
+     --font-jetbrains on the <html> element; we map them to semantic names here */
+  --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
+  --font-display: var(--font-barlow), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  /* Backgrounds / surfaces */
+  --color-bg: #0A0A0D;
+  --color-surface-1: #111116;
+  --color-surface-2: #18181F;
+  --color-surface-3: #222229;
+
+  /* Borders */
+  --color-border: #26262E;
+  --color-border-mid: #32323C;
+  --color-border-hi: #404048;
+
+  /* Text */
+  --color-text-1: #F5F5F8;
+  --color-text-2: #A0A0AE;
+  --color-text-3: #60606C;
+
+  /* Accent (orange) */
+  --color-accent: #F97316;
+  --color-accent-dim: rgba(249, 115, 22, 0.12);
+  --color-accent-glow: rgba(249, 115, 22, 0.22);
+
+  /* Semantic states */
+  --color-success: #4ADE80;
+  --color-success-bg: #052E16;
+  --color-success-border: #166534;
+
+  --color-danger: #F87171;
+  --color-danger-bg: #2D0F0F;
+  --color-danger-border: #7F1D1D;
+
+  --color-caution: #FBBF24;
+  --color-caution-bg: #1C1400;
+  --color-caution-border: #92400E;
+
+  --color-info: #60A5FA;
 }
 
 @theme inline {
@@ -11,35 +54,29 @@
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text-1);
+  font-family: var(--font-sans);
 }
 
-/* Carbon-fiber / garage-grid texture — applied to the page shell wrapper */
+/* Font utility classes — apply display/mono fonts to specific elements */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Page shell background — texture removed (was rgba 0.013, visually inert) */
 .garage-bg {
-  background-color: #09090b;
-  background-image:
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 2px,
-      rgba(255, 255, 255, 0.013) 2px,
-      rgba(255, 255, 255, 0.013) 4px
-    ),
-    repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 2px,
-      rgba(255, 255, 255, 0.013) 2px,
-      rgba(255, 255, 255, 0.013) 4px
-    );
+  background-color: var(--color-bg);
 }
 
-/* Subtle orange glow ring used on featured cards */
+/* Orange glow ring — reserved for result variant cards only */
 .glow-border-orange {
   border-color: rgba(249, 115, 22, 0.38);
   box-shadow:
-    0 0 32px rgba(249, 115, 22, 0.1),
+    0 0 24px var(--color-accent-glow),
     inset 0 1px 0 rgba(249, 115, 22, 0.07);
 }

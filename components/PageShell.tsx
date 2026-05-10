@@ -7,40 +7,35 @@ interface PageShellProps {
   maxWidth?: string;
 }
 
-/**
- * Shared garage-themed page wrapper.
- * Provides: dark carbon-fiber background, sticky top nav, bottom footer privacy note.
- * Used by the homepage and any page that wants the full chrome.
- */
 export default function PageShell({ children, maxWidth = 'max-w-5xl' }: PageShellProps) {
   return (
     <div className="garage-bg min-h-screen flex flex-col text-white">
 
       {/* Top nav */}
-      <nav className="sticky top-0 z-20 border-b border-zinc-800/70 bg-zinc-950/85 backdrop-blur-sm">
+      <nav className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[rgba(10,10,13,0.88)] backdrop-blur-sm">
         <div className={`${maxWidth} mx-auto px-4 py-3 flex items-center justify-between gap-4 flex-wrap`}>
           <Link
             href="/"
-            className="text-orange-500 font-black text-lg tracking-tight hover:text-orange-400 transition-colors"
+            className="font-display font-bold text-xl tracking-tight uppercase text-[var(--color-accent)] hover:text-orange-400 transition-colors"
           >
             Will I Gap It?
           </Link>
           <div className="flex items-center gap-5 flex-wrap">
             <Link
               href="/results"
-              className="text-xs text-zinc-400 hover:text-orange-400 transition-colors hidden sm:block"
+              className="text-sm text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors hidden sm:block"
             >
               Community Results
             </Link>
             <Link
               href="/leaderboard"
-              className="text-xs text-zinc-400 hover:text-orange-400 transition-colors"
+              className="text-sm text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors"
             >
               Leaderboard
             </Link>
             <Link
               href="/insights"
-              className="text-xs text-zinc-400 hover:text-orange-400 transition-colors hidden sm:block"
+              className="text-sm text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors hidden sm:block"
             >
               Insights
             </Link>
@@ -57,25 +52,25 @@ export default function PageShell({ children, maxWidth = 'max-w-5xl' }: PageShel
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800/50 py-6 mt-4">
+      <footer className="border-t border-[var(--color-border)] py-6 mt-4">
         <div className={`${maxWidth} mx-auto px-4`}>
-          <p className="text-center text-zinc-600 text-xs leading-relaxed">
+          <p className="text-center text-[var(--color-text-3)] text-xs leading-relaxed">
             No real names, plates, locations, or public emails required.
             Proof links are optional. Email is only used for login and recovery.
           </p>
-          <p className="text-center text-zinc-700 text-xs mt-1.5">
+          <p className="text-center text-[var(--color-text-3)] text-xs mt-1.5 opacity-60">
             For closed-course and track comparison only. Results are estimates and do not guarantee real-world outcomes.
           </p>
           <div className="flex items-center justify-center gap-4 mt-3">
-            <Link href="/privacy" className="text-zinc-700 hover:text-zinc-500 text-xs transition-colors">
+            <Link href="/privacy" className="text-[var(--color-text-3)] hover:text-[var(--color-text-2)] text-xs transition-colors">
               Privacy
             </Link>
-            <span className="text-zinc-800 text-xs">|</span>
-            <Link href="/terms" className="text-zinc-700 hover:text-zinc-500 text-xs transition-colors">
+            <span className="text-[var(--color-border-mid)] text-xs">|</span>
+            <Link href="/terms" className="text-[var(--color-text-3)] hover:text-[var(--color-text-2)] text-xs transition-colors">
               Terms
             </Link>
-            <span className="text-zinc-800 text-xs">|</span>
-            <Link href="/contact" className="text-zinc-700 hover:text-zinc-500 text-xs transition-colors">
+            <span className="text-[var(--color-border-mid)] text-xs">|</span>
+            <Link href="/contact" className="text-[var(--color-text-3)] hover:text-[var(--color-text-2)] text-xs transition-colors">
               Contact
             </Link>
           </div>

@@ -1,33 +1,38 @@
 import { ReactNode } from 'react';
 
+type GarageCardVariant = 'default' | 'inset' | 'result';
+
 interface GarageCardProps {
   children: ReactNode;
-  /** Extra Tailwind classes */
   className?: string;
-  /** Show an orange glow border instead of the default subtle border */
+  /** Visual variant. 'result' applies the orange accent border + glow. Default: 'default'. */
+  variant?: GarageCardVariant;
+  /**
+   * @deprecated Use variant="result" instead.
+   * Preserved for backward compatibility — treated as variant="result".
+   */
   glow?: boolean;
   /** Tailwind padding class, defaults to p-5 */
   padding?: string;
 }
 
-/**
- * Brushed-metal / garage-panel card.
- * Use `glow` for featured/result cards that should pop with an orange accent.
- */
+const variantClasses: Record<GarageCardVariant, string> = {
+  default: 'bg-[var(--color-surface-1)] border border-[var(--color-border)]',
+  inset:   'bg-[var(--color-surface-2)] border border-[var(--color-border)]',
+  result:  'bg-[var(--color-surface-1)] border glow-border-orange',
+};
+
 export default function GarageCard({
   children,
   className = '',
+  variant = 'default',
   glow = false,
   padding = 'p-5',
 }: GarageCardProps) {
-  const border = glow
-    ? 'border glow-border-orange'
-    : 'border border-zinc-800/80';
+  const resolvedVariant: GarageCardVariant = glow ? 'result' : variant;
 
   return (
-    <div
-      className={`rounded-xl bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-zinc-950 ${border} ${padding} ${className}`}
-    >
+    <div className={`rounded-xl ${variantClasses[resolvedVariant]} ${padding} ${className}`}>
       {children}
     </div>
   );
