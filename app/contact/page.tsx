@@ -29,8 +29,14 @@ export default function ContactPage() {
             For feedback, bugs, privacy concerns, or takedown requests, contact the
             Will I Gap It team.
           </p>
-          <p className="text-zinc-400 text-sm mt-3 italic">
-            Contact email coming soon.
+          <p className="text-zinc-600 text-sm mt-3">
+            For feedback, bugs, or prediction issues, email{' '}
+            <a
+              href="mailto:gabemuk@bu.edu"
+              className="text-[var(--color-accent)] hover:text-orange-600 transition-colors underline underline-offset-2"
+            >
+              gabemuk@bu.edu
+            </a>.
           </p>
         </div>
 
