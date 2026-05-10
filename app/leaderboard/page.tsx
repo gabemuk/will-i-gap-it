@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import AuthNav from '@/components/AuthNav';
+import PageShell from '@/components/PageShell';
 import { supabase } from '@/lib/supabase';
 import {
   formatRaceType,
   formatProofType,
-  formatDate,
   formatVerificationStatus,
-  getVerificationBadgeClass,
 } from '@/lib/format';
 import { buildLeaderboards } from '@/lib/leaderboard';
 import {
@@ -21,162 +19,349 @@ import {
   type TimeWindowFilter,
 } from '@/lib/resultFilters';
 import type { ResultWithMatchup } from '@/lib/types';
-import type { LeaderboardData, DriverEntry, WinEntry, ModelEntry } from '@/lib/leaderboard';
+import type { LeaderboardData } from '@/lib/leaderboard';
 import FlagResultForm from '@/components/FlagResultForm';
 import { buildProfileMap, collectUserIds, getSubmitterName } from '@/lib/profileDisplay';
 
-// --- Section wrapper ---
+// ── Local badge helper (light-theme) ─────────────────────────────────────────
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function lightVerificationBadgeClass(status: string | null | undefined): string {
+  switch (status) {
+    case 'proof_claimed':  return 'bg-amber-50 text-amber-700 border border-amber-200';
+    case 'proof_linked':   return 'bg-blue-50 text-blue-700 border border-blue-200';
+    case 'admin_verified': return 'bg-green-50 text-green-700 border border-green-200';
+    case 'disputed':       return 'bg-red-50 text-red-700 border border-red-200';
+    default:               return 'bg-zinc-100 text-zinc-500 border border-zinc-200';
+  }
+}
+
+// ── Tab types ─────────────────────────────────────────────────────────────────
+
+type Tab = 'summary' | 'builds' | 'drivers' | 'results';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'summary', label: 'Summary'  },
+  { id: 'builds',  label: 'Builds'   },
+  { id: 'drivers', label: 'Drivers'  },
+  { id: 'results', label: 'Results'  },
+];
+
+const INITIAL_SHOW = 5;
+
+// ── Summary tab ───────────────────────────────────────────────────────────────
+
+function SummaryTab({ data }: { data: LeaderboardData }) {
+  const raceTypeLabels: { key: keyof typeof data.raceTypeCounts; label: string }[] = [
+    { key: 'dig',          label: 'Dig'          },
+    { key: '40 roll',      label: '40 Roll'      },
+    { key: '60 roll',      label: '60 Roll'      },
+    { key: '60-130',       label: '60-130'       },
+    { key: 'quarter mile', label: 'Quarter Mile' },
+  ];
+  const maxCount = Math.max(...Object.values(data.raceTypeCounts), 1);
+  const { predictionAccuracy } = data;
+
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-6">
-      <h2 className="text-lg font-black text-orange-500 uppercase tracking-wide mb-4">{title}</h2>
-      {children}
+    <div className="space-y-4">
+      {/* Race activity */}
+      <div className="bg-white border border-zinc-200 rounded-xl p-5">
+        <p className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">
+          Race Activity
+        </p>
+        <p className="font-mono text-3xl font-bold text-zinc-900 leading-none mb-4">
+          {data.totalResults}
+          <span className="text-base font-sans font-normal text-zinc-400 ml-2">results submitted</span>
+        </p>
+        <div className="space-y-2.5">
+          {raceTypeLabels.map(({ key, label }) => {
+            const count = data.raceTypeCounts[key];
+            const pct = Math.round((count / maxCount) * 100);
+            return (
+              <div key={key} className="flex items-center gap-3">
+                <span className="text-xs text-zinc-500 w-24 shrink-0">{label}</span>
+                <div className="flex-1 bg-zinc-100 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="h-1.5 bg-[var(--color-accent)] rounded-full transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="font-mono text-xs font-semibold text-zinc-700 w-5 text-right shrink-0">
+                  {count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Prediction accuracy */}
+      <div className="bg-white border border-zinc-200 rounded-xl p-5">
+        <p className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">
+          Prediction Accuracy
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-green-50 border border-green-100 rounded-lg p-3 text-center">
+            <p className="font-mono text-2xl font-bold text-green-700">{predictionAccuracy.correct}</p>
+            <p className="text-xs text-green-600 mt-1">Correct</p>
+          </div>
+          <div className="bg-red-50 border border-red-100 rounded-lg p-3 text-center">
+            <p className="font-mono text-2xl font-bold text-red-700">{predictionAccuracy.missed}</p>
+            <p className="text-xs text-red-600 mt-1">Missed</p>
+          </div>
+          <div className="bg-[var(--color-accent-dim)] border border-orange-100 rounded-lg p-3 text-center">
+            <p className="font-mono text-2xl font-bold text-[var(--color-accent)]">
+              {predictionAccuracy.percentage}%
+            </p>
+            <p className="text-xs text-orange-600 mt-1">Accuracy</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-// --- Leaderboard sections ---
+// ── Builds tab ────────────────────────────────────────────────────────────────
 
-function MostWinsSection({ data }: { data: LeaderboardData }) {
-  if (data.mostWins.length === 0) {
-    return (
-      <Section title="Most Reported Wins">
-        <p className="text-zinc-500 text-sm">No win data for these filters.</p>
-      </Section>
-    );
-  }
-  return (
-    <Section title="Most Reported Wins">
-      <p className="text-xs text-zinc-600 mb-3 -mt-1">Similar builds are grouped using normalized year/make/model/trim data.</p>
-      <div className="space-y-2">
-        {data.mostWins.map((entry, i) => (
-          <div key={entry.buildKey} className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-3">
-            <span className="text-lg font-black text-zinc-500 w-7 shrink-0">#{i + 1}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">{entry.displayLabel}</p>
-              {entry.latestRaceType && (
-                <p className="text-xs text-zinc-500 mt-0.5">Latest: {formatRaceType(entry.latestRaceType)}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="text-sm font-black text-orange-400">
-                {entry.wins} {entry.wins === 1 ? 'win' : 'wins'}
-              </span>
-              {entry.latestShareCode && (
-                <Link
-                  href={`/matchup/${entry.latestShareCode}`}
-                  className="text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2"
-                >
-                  View
-                </Link>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </Section>
-  );
-}
+function BuildsTab({ data }: { data: LeaderboardData }) {
+  const [showAllBuilds, setShowAllBuilds] = useState(false);
+  const [showAllModels, setShowAllModels] = useState(false);
 
-function PredictionsSection({ data, profileMap }: { data: LeaderboardData; profileMap: Map<string, string> }) {
-  const { predictionAccuracy, recentCorrect } = data;
+  const builds = showAllBuilds ? data.mostWins : data.mostWins.slice(0, INITIAL_SHOW);
+  const models = showAllModels ? data.topModels : data.topModels.slice(0, INITIAL_SHOW);
+
   return (
-    <Section title="Most Correct Predictions">
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="bg-zinc-800/60 rounded-lg p-3 text-center">
-          <p className="text-2xl font-black text-green-400">{predictionAccuracy.correct}</p>
-          <p className="text-xs text-zinc-500 mt-1">Correct</p>
+    <div className="space-y-4">
+      {/* Most Wins */}
+      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-zinc-100">
+          <p className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+            Most Reported Wins
+          </p>
+          <p className="text-xs text-zinc-400 mt-0.5">Grouped by normalized year / make / model / trim</p>
         </div>
-        <div className="bg-zinc-800/60 rounded-lg p-3 text-center">
-          <p className="text-2xl font-black text-red-400">{predictionAccuracy.missed}</p>
-          <p className="text-xs text-zinc-500 mt-1">Missed</p>
-        </div>
-        <div className="bg-zinc-800/60 rounded-lg p-3 text-center">
-          <p className="text-2xl font-black text-orange-400">{predictionAccuracy.percentage}%</p>
-          <p className="text-xs text-zinc-500 mt-1">Accuracy</p>
-        </div>
-      </div>
-      {recentCorrect.length === 0 ? (
-        <p className="text-zinc-500 text-sm">No correct predictions for these filters.</p>
-      ) : (
-        <div className="space-y-2">
-          <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Recent Correct Predictions</p>
-          {recentCorrect.map((entry, i) => (
-            <div key={i} className="bg-zinc-800/50 rounded-lg px-4 py-3">
-              <div className="flex items-start justify-between gap-2">
+        {data.mostWins.length === 0 ? (
+          <div className="px-5 py-6 text-sm text-zinc-400">No win data for these filters.</div>
+        ) : (
+          <>
+            {builds.map((entry, i) => (
+              <div
+                key={entry.buildKey}
+                className="flex items-center gap-3 px-5 py-3 border-b border-zinc-100 last:border-b-0 hover:bg-zinc-50 transition-colors"
+              >
+                <span className="font-mono text-sm text-zinc-400 w-6 shrink-0">#{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-white leading-snug truncate">
-                    <span className="text-orange-500">{entry.carALabel}</span>
-                    <span className="text-zinc-600 mx-1.5">vs</span>
-                    <span className="text-orange-400">{entry.carBLabel}</span>
+                  <p className="font-display font-bold text-sm text-zinc-900 truncate">
+                    {entry.displayLabel}
                   </p>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                    <p className="text-xs text-zinc-500">Predicted: <span className="text-green-400">{entry.predictedWinner}</span></p>
-                    <p className="text-xs text-zinc-500">Actual: <span className="text-zinc-300">{entry.actualWinner}</span></p>
-                    <p className="text-xs text-zinc-500">{formatRaceType(entry.raceType)}</p>
-                  </div>
-                  <div className="flex items-center gap-3 flex-wrap mt-1.5">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getVerificationBadgeClass(entry.verificationStatus)}`}>
-                      {formatVerificationStatus(entry.verificationStatus)}
-                    </span>
-                    <p className="text-xs text-zinc-600">
-                      Submitted by{' '}
-                      <span className="text-zinc-500">
-                        {getSubmitterName(entry.userId, profileMap)}
-                      </span>
+                  {entry.latestRaceType && (
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Latest: {formatRaceType(entry.latestRaceType)}
                     </p>
-                  </div>
+                  )}
                 </div>
-                {entry.shareCode && (
-                  <Link
-                    href={`/matchup/${entry.shareCode}`}
-                    className="text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2 shrink-0"
-                  >
-                    View
-                  </Link>
-                )}
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="font-mono text-sm font-bold text-[var(--color-accent)]">
+                    {entry.wins}W
+                  </span>
+                  {entry.latestShareCode && (
+                    <Link
+                      href={`/matchup/${entry.latestShareCode}`}
+                      className="text-xs text-zinc-400 hover:text-orange-500 transition-colors underline underline-offset-2"
+                    >
+                      View
+                    </Link>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+            {data.mostWins.length > INITIAL_SHOW && (
+              <div className="px-5 py-3 border-t border-zinc-100">
+                <button
+                  onClick={() => setShowAllBuilds((v) => !v)}
+                  className="text-xs text-orange-500 hover:text-orange-600 font-semibold transition-colors underline underline-offset-2"
+                >
+                  {showAllBuilds
+                    ? 'Show less'
+                    : `Show ${data.mostWins.length - INITIAL_SHOW} more`}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Top Models */}
+      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-zinc-100">
+          <p className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+            Top Models
+          </p>
+          <p className="text-xs text-zinc-400 mt-0.5">Grouped by make / model / trim across all years</p>
         </div>
-      )}
-    </Section>
+        {data.topModels.length === 0 ? (
+          <div className="px-5 py-6 text-sm text-zinc-400">No model data for these filters.</div>
+        ) : (
+          <>
+            {models.map((entry, i) => (
+              <div
+                key={entry.modelKey}
+                className="flex items-center gap-3 px-5 py-3 border-b border-zinc-100 last:border-b-0 hover:bg-zinc-50 transition-colors"
+              >
+                <span className="font-mono text-sm text-zinc-400 w-6 shrink-0">#{i + 1}</span>
+                <span className="font-display font-bold text-sm text-zinc-900 flex-1 truncate">
+                  {entry.displayLabel}
+                </span>
+                <span className="font-mono text-sm font-bold text-[var(--color-accent)] shrink-0">
+                  {entry.wins}W
+                </span>
+              </div>
+            ))}
+            {data.topModels.length > INITIAL_SHOW && (
+              <div className="px-5 py-3 border-t border-zinc-100">
+                <button
+                  onClick={() => setShowAllModels((v) => !v)}
+                  className="text-xs text-orange-500 hover:text-orange-600 font-semibold transition-colors underline underline-offset-2"
+                >
+                  {showAllModels
+                    ? 'Show less'
+                    : `Show ${data.topModels.length - INITIAL_SHOW} more`}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
-function BiggestGapsSection({ data, profileMap }: { data: LeaderboardData; profileMap: Map<string, string> }) {
-  if (data.biggestGaps.length === 0) {
-    return (
-      <Section title="Biggest Reported Gaps">
-        <p className="text-zinc-500 text-sm">No gap data for these filters.</p>
-      </Section>
-    );
-  }
+// ── Drivers tab ───────────────────────────────────────────────────────────────
+
+function DriversTab({
+  data,
+  profileMap,
+}: {
+  data: LeaderboardData;
+  profileMap: Map<string, string>;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const drivers = showAll ? data.topDrivers : data.topDrivers.slice(0, INITIAL_SHOW);
+
   return (
-    <Section title="Biggest Reported Gaps">
-      <div className="space-y-2">
-        {data.biggestGaps.map((entry, i) => (
-          <div key={i} className="bg-zinc-800/50 rounded-lg px-4 py-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-black text-zinc-500">#{i + 1}</span>
-                  <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                    {entry.actualGap}
-                  </span>
+    <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+      <div className="px-5 py-3 border-b border-zinc-100">
+        <p className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+          Top Drivers
+        </p>
+        <p className="text-xs text-zinc-400 mt-0.5">Ranked by submitted closed-course wins</p>
+      </div>
+      {data.topDrivers.length === 0 ? (
+        <div className="px-5 py-6 text-sm text-zinc-400">No driver data for these filters.</div>
+      ) : (
+        <>
+          {drivers.map((entry, i) => {
+            const name = profileMap.get(entry.userId) || 'Anonymous';
+            return (
+              <div
+                key={entry.userId}
+                className={`flex items-center gap-3 px-5 py-3 border-b border-zinc-100 last:border-b-0 hover:bg-zinc-50 transition-colors ${
+                  i === 0 ? 'bg-orange-50/50' : ''
+                }`}
+              >
+                <span
+                  className={`font-mono text-sm w-6 shrink-0 ${
+                    i === 0 ? 'text-[var(--color-accent)] font-bold' : 'text-zinc-400'
+                  }`}
+                >
+                  #{i + 1}
+                </span>
+                <span className="flex-1 text-sm font-semibold text-zinc-900 truncate">{name}</span>
+                <span className="font-mono text-sm font-bold text-[var(--color-accent)] shrink-0">
+                  {entry.wins}W
+                </span>
+              </div>
+            );
+          })}
+          {data.topDrivers.length > INITIAL_SHOW && (
+            <div className="px-5 py-3 border-t border-zinc-100">
+              <button
+                onClick={() => setShowAll((v) => !v)}
+                className="text-xs text-orange-500 hover:text-orange-600 font-semibold transition-colors underline underline-offset-2"
+              >
+                {showAll
+                  ? 'Show less'
+                  : `Show ${data.topDrivers.length - INITIAL_SHOW} more`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Results tab ───────────────────────────────────────────────────────────────
+
+function ResultsTab({
+  data,
+  profileMap,
+}: {
+  data: LeaderboardData;
+  profileMap: Map<string, string>;
+}) {
+  const [showAllGaps, setShowAllGaps] = useState(false);
+  const [showAllPreds, setShowAllPreds] = useState(false);
+
+  const gaps = showAllGaps ? data.biggestGaps : data.biggestGaps.slice(0, INITIAL_SHOW);
+  const preds = showAllPreds ? data.recentCorrect : data.recentCorrect.slice(0, INITIAL_SHOW);
+
+  return (
+    <div className="space-y-4">
+      {/* Biggest Gaps */}
+      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-zinc-100">
+          <p className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+            Biggest Reported Gaps
+          </p>
+        </div>
+        {data.biggestGaps.length === 0 ? (
+          <div className="px-5 py-6 text-sm text-zinc-400">No gap data for these filters.</div>
+        ) : (
+          <>
+            {gaps.map((entry, i) => (
+              <div
+                key={entry.raceResultId}
+                className="px-5 py-4 border-b border-zinc-100 last:border-b-0"
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-xs text-zinc-400">#{i + 1}</span>
+                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[var(--color-accent-dim)] text-[var(--color-accent)] border border-orange-200/60">
+                      {entry.actualGap}
+                    </span>
+                  </div>
+                  {entry.shareCode && (
+                    <Link
+                      href={`/matchup/${entry.shareCode}`}
+                      className="text-xs text-zinc-400 hover:text-orange-500 transition-colors underline underline-offset-2 shrink-0"
+                    >
+                      View
+                    </Link>
+                  )}
                 </div>
-                <p className="text-sm font-bold text-white mt-1 leading-snug truncate">
-                  <span className="text-orange-500">{entry.carALabel}</span>
-                  <span className="text-zinc-600 mx-1.5">vs</span>
-                  <span className="text-orange-400">{entry.carBLabel}</span>
+                <p className="font-display font-bold text-sm text-zinc-900 leading-snug mb-1 truncate">
+                  <span className="text-[var(--color-accent)]">{entry.carALabel}</span>
+                  <span className="text-zinc-300 mx-1.5">vs</span>
+                  <span className="text-zinc-700">{entry.carBLabel}</span>
                 </p>
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                  <p className="text-xs text-zinc-500">Winner: <span className="text-zinc-300">{entry.actualWinner}</span></p>
-                  <p className="text-xs text-zinc-500">Proof: <span className="text-zinc-400">{formatProofType(entry.proofType)}</span></p>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap mt-1.5">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getVerificationBadgeClass(entry.verificationStatus)}`}>
+                <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
+                  <p className="text-xs text-zinc-500">
+                    Winner: <span className="text-zinc-700 font-medium">{entry.actualWinner}</span>
+                  </p>
+                  <p className="text-xs text-zinc-400">{formatProofType(entry.proofType)}</p>
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${lightVerificationBadgeClass(entry.verificationStatus)}`}
+                  >
                     {formatVerificationStatus(entry.verificationStatus)}
                   </span>
                   {entry.proofUrl && (
@@ -184,163 +369,109 @@ function BiggestGapsSection({ data, profileMap }: { data: LeaderboardData; profi
                       href={entry.proofUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+                      className="text-xs text-orange-500 hover:text-orange-600 underline underline-offset-2 transition-colors"
                     >
                       View proof
                     </a>
                   )}
-                  <p className="text-xs text-zinc-600">
-                    Submitted by{' '}
-                    <span className="text-zinc-500">
-                      {getSubmitterName(entry.userId, profileMap)}
-                    </span>
-                  </p>
                 </div>
-              </div>
-              {entry.shareCode && (
-                <Link
-                  href={`/matchup/${entry.shareCode}`}
-                  className="text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2 shrink-0"
-                >
-                  View
-                </Link>
-              )}
-            </div>
-            <FlagResultForm raceResultId={entry.raceResultId} />
-          </div>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-function ActivitySection({ data }: { data: LeaderboardData }) {
-  const raceTypeLabels: { key: keyof typeof data.raceTypeCounts; label: string }[] = [
-    { key: 'dig', label: 'Dig' },
-    { key: '40 roll', label: '40 Roll' },
-    { key: '60 roll', label: '60 Roll' },
-    { key: '60-130', label: '60-130' },
-    { key: 'quarter mile', label: 'Quarter Mile' },
-  ];
-  const maxCount = Math.max(...Object.values(data.raceTypeCounts), 1);
-  return (
-    <Section title="Most Active Race Types">
-      <div className="mb-4">
-        <p className="text-3xl font-black text-white">
-          {data.totalResults}
-          <span className="text-base font-semibold text-zinc-400 ml-2">total submitted results</span>
-        </p>
-      </div>
-      <div className="space-y-2">
-        {raceTypeLabels.map(({ key, label }) => {
-          const count = data.raceTypeCounts[key];
-          const pct = Math.round((count / maxCount) * 100);
-          return (
-            <div key={key} className="flex items-center gap-3">
-              <span className="text-xs text-zinc-400 w-24 shrink-0">{label}</span>
-              <div className="flex-1 bg-zinc-800 rounded-full h-2 overflow-hidden">
-                <div className="h-2 bg-orange-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
-              </div>
-              <span className="text-xs font-bold text-zinc-300 w-6 text-right shrink-0">{count}</span>
-            </div>
-          );
-        })}
-      </div>
-    </Section>
-  );
-}
-
-// --- Community leaderboards ---
-
-function CommunityLeaderboardsSection({
-  data,
-  profileMap,
-}: {
-  data: LeaderboardData;
-  profileMap: Map<string, string>;
-}) {
-  const topDrivers: DriverEntry[] = data.topDrivers;
-  const topBuilds: WinEntry[] = data.topBuilds;
-  const topModels: ModelEntry[] = data.topModels;
-
-  return (
-    <Section title="Community Leaderboards">
-      {/* Top Drivers */}
-      <div className="mb-5">
-        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Top Drivers</p>
-        {topDrivers.length === 0 ? (
-          <p className="text-zinc-600 text-sm">No driver data for these filters.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {topDrivers.map((entry, i) => {
-              const name = profileMap.get(entry.userId) || 'Anonymous';
-              return (
-                <div
-                  key={entry.userId}
-                  className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-2.5"
-                >
-                  <span className="text-sm font-black text-zinc-500 w-6 shrink-0">#{i + 1}</span>
-                  <span className="flex-1 text-sm font-semibold text-white truncate">{name}</span>
-                  <span className="text-sm font-black text-orange-400 shrink-0">
-                    {entry.wins} {entry.wins === 1 ? 'win' : 'wins'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Top Builds */}
-      <div className="mb-5">
-        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Top Builds</p>
-        {topBuilds.length === 0 ? (
-          <p className="text-zinc-600 text-sm">No build data for these filters.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {topBuilds.map((entry, i) => (
-              <div
-                key={entry.buildKey}
-                className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-2.5"
-              >
-                <span className="text-sm font-black text-zinc-500 w-6 shrink-0">#{i + 1}</span>
-                <span className="flex-1 text-sm font-semibold text-white truncate">{entry.displayLabel}</span>
-                <span className="text-sm font-black text-orange-400 shrink-0">
-                  {entry.wins} {entry.wins === 1 ? 'win' : 'wins'}
-                </span>
+                <p className="text-xs text-zinc-400 mt-1">
+                  by {getSubmitterName(entry.userId, profileMap)}
+                </p>
+                <FlagResultForm raceResultId={entry.raceResultId} />
               </div>
             ))}
-          </div>
+            {data.biggestGaps.length > INITIAL_SHOW && (
+              <div className="px-5 py-3 border-t border-zinc-100">
+                <button
+                  onClick={() => setShowAllGaps((v) => !v)}
+                  className="text-xs text-orange-500 hover:text-orange-600 font-semibold transition-colors underline underline-offset-2"
+                >
+                  {showAllGaps
+                    ? 'Show less'
+                    : `Show ${data.biggestGaps.length - INITIAL_SHOW} more`}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Top Models */}
-      <div>
-        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Top Models</p>
-        {topModels.length === 0 ? (
-          <p className="text-zinc-600 text-sm">No model data for these filters.</p>
+      {/* Recent Correct Predictions */}
+      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-zinc-100">
+          <p className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+            Recent Correct Predictions
+          </p>
+        </div>
+        {data.recentCorrect.length === 0 ? (
+          <div className="px-5 py-6 text-sm text-zinc-400">
+            No correct predictions for these filters.
+          </div>
         ) : (
-          <div className="space-y-1.5">
-            {topModels.map((entry, i) => (
-              <div
-                key={entry.modelKey}
-                className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-4 py-2.5"
-              >
-                <span className="text-sm font-black text-zinc-500 w-6 shrink-0">#{i + 1}</span>
-                <span className="flex-1 text-sm font-semibold text-white truncate">{entry.displayLabel}</span>
-                <span className="text-sm font-black text-orange-400 shrink-0">
-                  {entry.wins} {entry.wins === 1 ? 'win' : 'wins'}
-                </span>
+          <>
+            {preds.map((entry, i) => (
+              <div key={i} className="px-5 py-4 border-b border-zinc-100 last:border-b-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-bold text-sm text-zinc-900 leading-snug truncate">
+                      <span className="text-[var(--color-accent)]">{entry.carALabel}</span>
+                      <span className="text-zinc-300 mx-1.5">vs</span>
+                      <span className="text-zinc-700">{entry.carBLabel}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                      <p className="text-xs text-zinc-500">
+                        Predicted:{' '}
+                        <span className="text-green-700 font-medium">{entry.predictedWinner}</span>
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        Actual:{' '}
+                        <span className="text-zinc-700 font-medium">{entry.actualWinner}</span>
+                      </p>
+                      <p className="text-xs text-zinc-400">{formatRaceType(entry.raceType)}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                      <span
+                        className={`text-xs font-semibold px-2 py-0.5 rounded-full ${lightVerificationBadgeClass(entry.verificationStatus)}`}
+                      >
+                        {formatVerificationStatus(entry.verificationStatus)}
+                      </span>
+                      <p className="text-xs text-zinc-400">
+                        by {getSubmitterName(entry.userId, profileMap)}
+                      </p>
+                    </div>
+                  </div>
+                  {entry.shareCode && (
+                    <Link
+                      href={`/matchup/${entry.shareCode}`}
+                      className="text-xs text-zinc-400 hover:text-orange-500 transition-colors underline underline-offset-2 shrink-0"
+                    >
+                      View
+                    </Link>
+                  )}
+                </div>
               </div>
             ))}
-          </div>
+            {data.recentCorrect.length > INITIAL_SHOW && (
+              <div className="px-5 py-3 border-t border-zinc-100">
+                <button
+                  onClick={() => setShowAllPreds((v) => !v)}
+                  className="text-xs text-orange-500 hover:text-orange-600 font-semibold transition-colors underline underline-offset-2"
+                >
+                  {showAllPreds
+                    ? 'Show less'
+                    : `Show ${data.recentCorrect.length - INITIAL_SHOW} more`}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
-    </Section>
+    </div>
   );
 }
 
-// --- Filter panel ---
+// ── Filter panel ──────────────────────────────────────────────────────────────
 
 interface LeaderboardFilters {
   raceType: RaceTypeFilter;
@@ -354,7 +485,8 @@ const DEFAULT_FILTERS: LeaderboardFilters = {
   timeWindow: 'all',
 };
 
-const selectCls = 'bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500 transition-colors cursor-pointer w-full';
+const selectCls =
+  'bg-white border border-zinc-200 text-zinc-900 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors cursor-pointer w-full';
 
 interface LeaderboardFilterPanelProps {
   filters: LeaderboardFilters;
@@ -363,19 +495,33 @@ interface LeaderboardFilterPanelProps {
   hasActiveFilters: boolean;
 }
 
-function LeaderboardFilterPanel({ filters, onChange, onClear, hasActiveFilters }: LeaderboardFilterPanelProps) {
+function LeaderboardFilterPanel({
+  filters,
+  onChange,
+  onClear,
+  hasActiveFilters,
+}: LeaderboardFilterPanelProps) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
+    <div className="bg-white border border-zinc-200 rounded-xl p-4 mb-6">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Filter Results</span>
+        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+          Filter
+        </span>
         {hasActiveFilters && (
-          <button onClick={onClear} className="text-xs text-orange-500 hover:text-orange-400 font-semibold transition-colors">
+          <button
+            onClick={onClear}
+            className="text-xs text-orange-500 hover:text-orange-600 font-semibold transition-colors"
+          >
             Clear filters
           </button>
         )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <select value={filters.raceType} onChange={(e) => onChange('raceType', e.target.value)} className={selectCls}>
+        <select
+          value={filters.raceType}
+          onChange={(e) => onChange('raceType', e.target.value)}
+          className={selectCls}
+        >
           <option value="all">All Race Types</option>
           <option value="dig">Dig</option>
           <option value="40 roll">40 Roll</option>
@@ -383,13 +529,21 @@ function LeaderboardFilterPanel({ filters, onChange, onClear, hasActiveFilters }
           <option value="60-130">60-130</option>
           <option value="quarter mile">Quarter Mile</option>
         </select>
-        <select value={filters.proofLevel} onChange={(e) => onChange('proofLevel', e.target.value)} className={selectCls}>
+        <select
+          value={filters.proofLevel}
+          onChange={(e) => onChange('proofLevel', e.target.value)}
+          className={selectCls}
+        >
           <option value="all">All Results</option>
           <option value="proof_linked_only">Proof Linked Only</option>
           <option value="proof_claimed_or_linked">Proof Claimed or Linked</option>
           <option value="exclude_disputed">Exclude Disputed</option>
         </select>
-        <select value={filters.timeWindow} onChange={(e) => onChange('timeWindow', e.target.value)} className={selectCls}>
+        <select
+          value={filters.timeWindow}
+          onChange={(e) => onChange('timeWindow', e.target.value)}
+          className={selectCls}
+        >
           <option value="all">All Time</option>
           <option value="7days">Last 7 Days</option>
           <option value="30days">Last 30 Days</option>
@@ -399,7 +553,7 @@ function LeaderboardFilterPanel({ filters, onChange, onClear, hasActiveFilters }
   );
 }
 
-// --- Page ---
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function LeaderboardPage() {
   const [rawResults, setRawResults] = useState<ResultWithMatchup[]>([]);
@@ -407,6 +561,7 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState<LeaderboardFilters>(DEFAULT_FILTERS);
+  const [activeTab, setActiveTab] = useState<Tab>('summary');
 
   useEffect(() => {
     async function fetchData() {
@@ -493,89 +648,102 @@ export default function LeaderboardPage() {
     leaderboard.mostWins.length === 0;
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-white">
-      <div className="max-w-3xl mx-auto px-4 py-10">
+    <PageShell variant="light" maxWidth="max-w-3xl">
 
-        <div className="text-center mb-10">
-          <Link href="/" className="text-orange-500 font-black text-2xl hover:text-orange-400 transition-colors">
-            Will I Gap It?
-          </Link>
-          <h1 className="text-4xl font-black tracking-tight text-white mt-4 mb-1">Leaderboard</h1>
-          <p className="text-zinc-400 text-sm mb-1">Top submitted closed-course matchup outcomes.</p>
-          <p className="text-zinc-600 text-xs">Rankings are based on user-submitted results and may be unverified.</p>
-        </div>
-
-        <div className="flex gap-3 mb-8 justify-center flex-wrap items-center">
-          <Link href="/" className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">
-            Calculator
-          </Link>
-          <Link href="/results" className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">
-            Recent Results
-          </Link>
-          <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30 cursor-default">
-            Leaderboard
-          </span>
-          <AuthNav />
-        </div>
-
-        {loading && (
-          <div className="text-center py-20">
-            <p className="text-zinc-500 animate-pulse">Loading leaderboard...</p>
-          </div>
-        )}
-
-        {!loading && error && (
-          <div className="bg-red-950/60 border border-red-700/60 rounded-xl p-5 text-red-300 text-sm text-center">
-            {error}
-          </div>
-        )}
-
-        {!loading && !error && hasNoData && (
-          <div className="text-center py-20 bg-zinc-900 border border-zinc-800 rounded-xl">
-            <p className="text-zinc-400 text-base font-semibold mb-2">No leaderboard data yet.</p>
-            <p className="text-zinc-600 text-sm mb-6 px-6">Submit actual results from saved matchups to start ranking builds.</p>
-            <Link href="/" className="inline-block px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-sm">
-              Go to Calculator
-            </Link>
-          </div>
-        )}
-
-        {!loading && !error && !hasNoData && (
-          <>
-            <LeaderboardFilterPanel
-              filters={filters}
-              onChange={handleFilterChange}
-              onClear={handleClearFilters}
-              hasActiveFilters={hasActiveFilters}
-            />
-
-            {isEmpty ? (
-              <div className="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl">
-                <p className="text-zinc-400 text-base font-semibold mb-2">No results match these filters.</p>
-                <button
-                  onClick={handleClearFilters}
-                  className="mt-3 text-sm text-orange-500 hover:text-orange-400 font-semibold transition-colors underline underline-offset-2"
-                >
-                  Clear filters
-                </button>
-              </div>
-            ) : leaderboard ? (
-              <>
-                <ActivitySection data={leaderboard} />
-                <CommunityLeaderboardsSection data={leaderboard} profileMap={profileMap} />
-                <MostWinsSection data={leaderboard} />
-                <PredictionsSection data={leaderboard} profileMap={profileMap} />
-                <BiggestGapsSection data={leaderboard} profileMap={profileMap} />
-              </>
-            ) : null}
-          </>
-        )}
-
-        <p className="text-center text-zinc-600 text-xs mt-6">
-          For closed-course and track comparison only. Results are estimates and do not guarantee real-world outcomes.
+      {/* Page header */}
+      <div className="mb-8">
+        <p className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">
+          Closed-Course Only
         </p>
-
+        <h1 className="font-display font-bold text-4xl sm:text-5xl uppercase tracking-tight text-zinc-900 leading-none mb-2">
+          Community Leaderboard
+        </h1>
+        <p className="text-zinc-500 text-sm">
+          Submitted results and prediction accuracy across all closed-course matchups.
+        </p>
       </div>
-    </main>
+
+      {/* Loading */}
+      {loading && (
+        <div className="text-center py-20">
+          <p className="text-zinc-400 text-sm animate-pulse">Loading leaderboard...</p>
+        </div>
+      )}
+
+      {/* Error */}
+      {!loading && error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-red-700 text-sm text-center">
+          {error}
+        </div>
+      )}
+
+      {/* Empty — no data at all */}
+      {!loading && !error && hasNoData && (
+        <div className="text-center py-20 bg-white border border-zinc-200 rounded-xl">
+          <p className="text-zinc-700 text-base font-semibold mb-2">No leaderboard data yet.</p>
+          <p className="text-zinc-400 text-sm mb-6 px-6">
+            Submit actual results from saved matchups to start ranking builds.
+          </p>
+          <Link
+            href="/"
+            className="inline-block px-5 py-2.5 bg-[var(--color-accent)] hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-sm"
+          >
+            Go to Calculator
+          </Link>
+        </div>
+      )}
+
+      {/* Data available */}
+      {!loading && !error && !hasNoData && (
+        <>
+          <LeaderboardFilterPanel
+            filters={filters}
+            onChange={handleFilterChange}
+            onClear={handleClearFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
+
+          {isEmpty ? (
+            <div className="text-center py-16 bg-white border border-zinc-200 rounded-xl">
+              <p className="text-zinc-700 text-base font-semibold mb-2">
+                No results match these filters.
+              </p>
+              <button
+                onClick={handleClearFilters}
+                className="mt-3 text-sm text-orange-500 hover:text-orange-600 font-semibold transition-colors underline underline-offset-2"
+              >
+                Clear filters
+              </button>
+            </div>
+          ) : leaderboard ? (
+            <>
+              {/* Tab bar */}
+              <div className="flex gap-0.5 p-1 bg-zinc-100 rounded-xl border border-zinc-200 mb-6 overflow-x-auto">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex-1 min-w-[70px] px-3 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'bg-[var(--color-accent)] text-white'
+                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/70'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab content */}
+              {activeTab === 'summary' && <SummaryTab data={leaderboard} />}
+              {activeTab === 'builds'  && <BuildsTab data={leaderboard} />}
+              {activeTab === 'drivers' && <DriversTab data={leaderboard} profileMap={profileMap} />}
+              {activeTab === 'results' && <ResultsTab data={leaderboard} profileMap={profileMap} />}
+            </>
+          ) : null}
+        </>
+      )}
+
+    </PageShell>
   );
 }
