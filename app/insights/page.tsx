@@ -637,12 +637,12 @@ export default function InsightsPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-0.5 p-1 bg-zinc-100 rounded-xl border border-zinc-200 mb-6">
+      <div className="flex gap-0.5 p-1 bg-zinc-100 rounded-xl border border-zinc-200 mb-6 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
+            className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
               activeTab === tab.id
                 ? 'bg-[var(--color-accent)] text-white'
                 : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/70'
