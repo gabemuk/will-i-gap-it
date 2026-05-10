@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import PageShell from '@/components/PageShell';
-import GarageCard from '@/components/GarageCard';
 
 export const metadata = {
   title: 'Terms – Will I Gap It?',
@@ -10,10 +9,10 @@ export const metadata = {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-sm font-black text-orange-500 uppercase tracking-wide mb-2">
+      <h2 className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">
         {title}
       </h2>
-      <div className="text-zinc-300 text-sm leading-relaxed space-y-2">
+      <div className="text-zinc-600 text-sm leading-relaxed space-y-2">
         {children}
       </div>
     </div>
@@ -22,17 +21,20 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function TermsPage() {
   return (
-    <PageShell maxWidth="max-w-2xl">
+    <PageShell variant="light" maxWidth="max-w-2xl">
+
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white tracking-tight mb-1">Terms</h1>
-        <p className="text-zinc-400 text-sm">
+        <h1 className="font-display font-bold text-4xl sm:text-5xl uppercase tracking-tight text-zinc-900">
+          Terms of Use
+        </h1>
+        <p className="text-zinc-500 text-sm mt-1">
           Plain-language rules for using Will I Gap It.
         </p>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="Closed-course use">
             <p>
               Will I Gap It is built for informational, entertainment, educational, and
@@ -45,9 +47,9 @@ export default function TermsPage() {
               facilitate street racing, illegal driving, or unsafe activity of any kind.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="Prediction accuracy">
             <p>
               All predictions are estimates based on the stats you enter. They are not
@@ -61,9 +63,9 @@ export default function TermsPage() {
               tool, not a performance certification.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="User-submitted content">
             <p>
               When you submit a community result, you are responsible for what you submit.
@@ -76,9 +78,9 @@ export default function TermsPage() {
               and general outcome details.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="Proof links">
             <p>
               Proof links are optional and point to external third-party platforms. You are
@@ -91,9 +93,9 @@ export default function TermsPage() {
               contain abusive content, or are inappropriate for the community.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="What not to submit">
             <p>The following are not welcome and may be removed:</p>
             <ul className="list-none space-y-1 mt-1">
@@ -109,15 +111,15 @@ export default function TermsPage() {
                 'Private or identifying information about other people (doxxing)',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
-                  <span className="text-orange-500 mt-0.5 shrink-0">—</span>
+                  <span className="text-[var(--color-accent)] mt-0.5 shrink-0">—</span>
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="No betting or race coordination">
             <p>
               Will I Gap It does not provide betting, wagering, matchmaking, or race-coordination
@@ -126,9 +128,9 @@ export default function TermsPage() {
               purpose of the app.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="Moderation">
             <p>
               Future versions of the app may hide, remove, dispute, or down-rank submitted
@@ -137,9 +139,10 @@ export default function TermsPage() {
               change over time as the community grows.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard glow>
+        {/* Risk disclaimer — bg-zinc-50 to visually distinguish the most important section */}
+        <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-6">
           <Section title="Use at your own risk">
             <p>
               Will I Gap It is provided as-is, for free, with no warranties. We make no
@@ -148,25 +151,26 @@ export default function TermsPage() {
               are community-sourced and unverified, and you are responsible for your own
               driving decisions and actions.
             </p>
-            <p className="text-zinc-500 text-xs mt-3">
+            <p className="text-zinc-400 text-xs mt-3">
               For closed-course and track comparison only.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
       </div>
 
-      <div className="mt-10 pt-6 border-t border-zinc-800/60 flex flex-wrap gap-4 justify-center">
-        <Link href="/" className="text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2">
+      <div className="mt-10 pt-6 border-t border-zinc-200 flex flex-wrap gap-4 justify-center">
+        <Link href="/" className="text-xs text-zinc-500 hover:text-[var(--color-accent)] transition-colors underline underline-offset-2">
           Back to Calculator
         </Link>
-        <Link href="/privacy" className="text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2">
+        <Link href="/privacy" className="text-xs text-zinc-500 hover:text-[var(--color-accent)] transition-colors underline underline-offset-2">
           Privacy
         </Link>
-        <Link href="/contact" className="text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2">
+        <Link href="/contact" className="text-xs text-zinc-500 hover:text-[var(--color-accent)] transition-colors underline underline-offset-2">
           Contact
         </Link>
       </div>
+
     </PageShell>
   );
 }

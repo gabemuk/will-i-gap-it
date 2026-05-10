@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import PageShell from '@/components/PageShell';
-import GarageCard from '@/components/GarageCard';
 
 export const metadata = {
   title: 'Privacy – Will I Gap It?',
@@ -10,10 +9,10 @@ export const metadata = {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-sm font-black text-orange-500 uppercase tracking-wide mb-2">
+      <h2 className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">
         {title}
       </h2>
-      <div className="text-zinc-300 text-sm leading-relaxed space-y-2">
+      <div className="text-zinc-600 text-sm leading-relaxed space-y-2">
         {children}
       </div>
     </div>
@@ -22,17 +21,20 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function PrivacyPage() {
   return (
-    <PageShell maxWidth="max-w-2xl">
+    <PageShell variant="light" maxWidth="max-w-2xl">
+
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white tracking-tight mb-1">Privacy</h1>
-        <p className="text-zinc-400 text-sm">
+        <h1 className="font-display font-bold text-4xl sm:text-5xl uppercase tracking-tight text-zinc-900">
+          Privacy Policy
+        </h1>
+        <p className="text-zinc-500 text-sm mt-1">
           Built to compare builds without exposing personal info.
         </p>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="What we collect">
             <p>
               When you save or share a matchup, we store the car and build details you entered,
@@ -49,9 +51,9 @@ export default function PrivacyPage() {
               login and account recovery — it is not stored alongside your matchup data.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="What we do not ask for">
             <p>We do not ask for and do not want:</p>
             <ul className="list-none space-y-1 mt-1">
@@ -65,15 +67,15 @@ export default function PrivacyPage() {
                 'Direct video uploads (not supported right now)',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
-                  <span className="text-orange-500 mt-0.5 shrink-0">—</span>
+                  <span className="text-[var(--color-accent)] mt-0.5 shrink-0">—</span>
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="Public information">
             <p>
               Submitted community results may appear on the Recent Results and Leaderboard pages.
@@ -86,9 +88,9 @@ export default function PrivacyPage() {
               as community-submitted results with no name attached.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="Proof links">
             <p>
               Proof links are completely optional. If you add one, it may point to a
@@ -101,9 +103,9 @@ export default function PrivacyPage() {
               links that contain private or personal information.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="Account email">
             <p>
               If you create an account, your email is used only for magic-link login and
@@ -115,9 +117,9 @@ export default function PrivacyPage() {
               at any time from your account page. You are not required to set one.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="Anonymous use">
             <p>
               You can compare builds, save and share matchups, and submit community results
@@ -129,9 +131,9 @@ export default function PrivacyPage() {
               anonymous activity.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
-        <GarageCard>
+        <div className="bg-white border border-zinc-200 rounded-xl p-6">
           <Section title="Data safety">
             <p>
               We collect only what is needed to make the feature work. We are not in the
@@ -143,21 +145,22 @@ export default function PrivacyPage() {
               identifying details out of proof links, notes, and display names.
             </p>
           </Section>
-        </GarageCard>
+        </div>
 
       </div>
 
-      <div className="mt-10 pt-6 border-t border-zinc-800/60 flex flex-wrap gap-4 justify-center">
-        <Link href="/" className="text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2">
+      <div className="mt-10 pt-6 border-t border-zinc-200 flex flex-wrap gap-4 justify-center">
+        <Link href="/" className="text-xs text-zinc-500 hover:text-[var(--color-accent)] transition-colors underline underline-offset-2">
           Back to Calculator
         </Link>
-        <Link href="/terms" className="text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2">
+        <Link href="/terms" className="text-xs text-zinc-500 hover:text-[var(--color-accent)] transition-colors underline underline-offset-2">
           Terms
         </Link>
-        <Link href="/contact" className="text-xs text-zinc-500 hover:text-orange-400 transition-colors underline underline-offset-2">
+        <Link href="/contact" className="text-xs text-zinc-500 hover:text-[var(--color-accent)] transition-colors underline underline-offset-2">
           Contact
         </Link>
       </div>
+
     </PageShell>
   );
 }
