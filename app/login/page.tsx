@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import PageShell from '@/components/PageShell';
 
 // ── Auth logic is UNCHANGED. Only visual markup has been updated. ──
 
@@ -40,113 +41,106 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="garage-bg min-h-screen text-white flex flex-col items-center justify-center px-4 py-14">
-      <div className="w-full max-w-sm">
+    <PageShell variant="light">
+      <div className="flex justify-center py-8">
+        <div className="w-full max-w-sm">
 
-        {/* ── Logo / brand ──────────────────────────────────────── */}
-        <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="text-orange-500 font-black text-2xl tracking-tight hover:text-orange-400 transition-colors"
-          >
-            Will I Gap It?
-          </Link>
-          <p className="text-zinc-600 text-xs mt-1 tracking-widest uppercase">
-            Closed-Course Matchup Calculator
-          </p>
-        </div>
+          {/* ── Page header ─────────────────────────────────────────── */}
+          <div className="text-center mb-6">
+            <h1 className="font-display font-bold text-4xl uppercase tracking-tight text-zinc-900">
+              Sign in
+            </h1>
+            <p className="text-zinc-500 text-sm mt-1.5 leading-relaxed">
+              Save matchups, manage your display name, and track your submitted results.
+            </p>
+          </div>
 
-        {/* ── Garage membership card ────────────────────────────── */}
-        <div className="relative rounded-xl border glow-border-orange bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 p-7">
+          {/* ── Auth card ────────────────────────────────────────────── */}
+          <div className="bg-white border border-zinc-200 rounded-xl p-7">
 
-          {/* Decorative top accent line */}
-          <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-orange-500/35 to-transparent pointer-events-none" />
+            <p className="text-zinc-500 text-sm mb-5 leading-relaxed">
+              No password needed. We&apos;ll send a secure login link to your email.
+            </p>
 
-          <h1 className="text-2xl font-black text-white mb-1 tracking-tight">
-            Enter the Garage
-          </h1>
-          <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
-            No password needed. We&apos;ll send a secure login link to your email.
-          </p>
-
-          {sent ? (
-            /* ── Success state ───────────────────────────────────── */
-            <div className="text-center py-4">
-              <div className="w-12 h-12 bg-green-900/40 border border-green-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-6 h-6 text-green-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <p className="text-green-400 font-semibold mb-2">
-                Check your email for the login link.
-              </p>
-              <p className="text-zinc-500 text-xs leading-relaxed">
-                Click the link in your inbox to sign in. It will expire after a short time.
-              </p>
-            </div>
-          ) : (
-            /* ── Form ───────────────────────────────────────────── */
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wide">
-                  Email address
-                </label>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="w-full bg-zinc-800/80 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:shadow-[0_0_0_2px_rgba(249,115,22,0.15)] transition-all"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-
-              {error && (
-                <div className="text-red-400 text-xs bg-red-950/40 border border-red-700/40 rounded-lg p-3">
-                  {error}
+            {sent ? (
+              /* ── Success state ──────────────────────────────────── */
+              <div className="text-center py-4">
+                <div className="w-12 h-12 bg-green-50 border border-green-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-6 h-6 text-green-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
                 </div>
-              )}
+                <p className="text-green-700 font-semibold mb-2">
+                  Check your email for the login link.
+                </p>
+                <p className="text-zinc-500 text-xs leading-relaxed">
+                  Click the link in your inbox to sign in. It will expire after a short time.
+                </p>
+              </div>
+            ) : (
+              /* ── Form ───────────────────────────────────────────── */
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-500 mb-1.5">
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    required
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-zinc-900 text-sm placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold rounded-xl transition-colors shadow-[0_2px_14px_rgba(249,115,22,0.28)]"
-              >
-                {loading ? 'Sending...' : 'Send Magic Link'}
-              </button>
-            </form>
-          )}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700">
+                    {error}
+                  </div>
+                )}
 
-          {/* Privacy copy */}
-          <p className="text-xs text-zinc-600 mt-5 text-center leading-relaxed">
-            No real names, plates, or locations required.
-            Your email is only used for login and recovery.
-          </p>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-[var(--color-accent)] hover:bg-orange-600 active:bg-orange-700 disabled:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
+                >
+                  {loading ? 'Sending…' : 'Send Magic Link'}
+                </button>
+              </form>
+            )}
+
+            {/* Privacy copy */}
+            <p className="text-xs text-zinc-400 mt-5 text-center leading-relaxed">
+              No real names, plates, or locations required.
+              Your email is only used for login and recovery.
+            </p>
+          </div>
+
+          {/* Back link */}
+          <div className="text-center mt-4">
+            <Link
+              href="/"
+              className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+            >
+              Back to calculator
+            </Link>
+          </div>
+
         </div>
-
-        {/* Back link */}
-        <div className="text-center mt-5">
-          <Link
-            href="/"
-            className="text-xs text-zinc-500 hover:text-orange-400 transition-colors"
-          >
-            Back to calculator
-          </Link>
-        </div>
-
       </div>
-    </main>
+    </PageShell>
   );
 }
