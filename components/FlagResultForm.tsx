@@ -77,7 +77,7 @@ export default function FlagResultForm({ raceResultId }: Props) {
   // ── Success state ──
   if (formState === 'success') {
     return (
-      <div className="mt-3 px-3 py-2 rounded-lg bg-zinc-800/60 border border-zinc-700/50 text-xs text-zinc-400">
+      <div className="mt-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-xs text-green-700">
         Thanks. This result was flagged for review.
       </div>
     );
@@ -88,44 +88,40 @@ export default function FlagResultForm({ raceResultId }: Props) {
     return (
       <button
         onClick={handleOpen}
-        className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors underline underline-offset-2 mt-2"
+        className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors underline underline-offset-2 mt-2"
       >
         Something wrong? Flag result
       </button>
     );
   }
 
-  // ── Open / submitting / error — inline form ──
+  // ── Open / submitting / error — inline light panel ──
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-3 bg-zinc-800/60 border border-zinc-700/50 rounded-xl p-4 space-y-3"
+      className="mt-3 bg-zinc-50 border border-zinc-200 rounded-xl p-4 space-y-3"
     >
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Flag result</p>
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
+      <p className="font-display text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+        Flag Result
+      </p>
 
       <p className="text-xs text-zinc-500">
         Help keep the dataset clean. Do not include plates, addresses, phone numbers, or private personal info.
       </p>
 
       <div>
-        <label className="block text-xs text-zinc-500 mb-1.5" htmlFor={`flag-reason-${raceResultId}`}>
-          Reason <span className="text-red-400">*</span>
+        <label
+          className="block text-xs font-medium text-zinc-500 mb-1.5"
+          htmlFor={`flag-reason-${raceResultId}`}
+        >
+          Reason <span className="text-orange-500">*</span>
         </label>
         <select
           id={`flag-reason-${raceResultId}`}
           value={reason}
           onChange={(e) => setReason(e.target.value as ResultReportReason)}
           required
-          className="w-full bg-zinc-900 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500 transition-colors cursor-pointer"
+          className="w-full bg-white border border-zinc-200 text-zinc-900 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors cursor-pointer"
         >
           <option value="" disabled>Select a reason…</option>
           {RESULT_REPORT_REASONS.map((r) => (
@@ -135,8 +131,12 @@ export default function FlagResultForm({ raceResultId }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs text-zinc-500 mb-1.5" htmlFor={`flag-note-${raceResultId}`}>
-          Additional details <span className="text-zinc-600">(optional, max 500 chars)</span>
+        <label
+          className="block text-xs font-medium text-zinc-500 mb-1.5"
+          htmlFor={`flag-note-${raceResultId}`}
+        >
+          Additional details{' '}
+          <span className="text-zinc-400 font-normal">(optional, max 500 chars)</span>
         </label>
         <textarea
           id={`flag-note-${raceResultId}`}
@@ -144,29 +144,31 @@ export default function FlagResultForm({ raceResultId }: Props) {
           onChange={(e) => setNote(e.target.value.slice(0, 500))}
           rows={2}
           placeholder="Briefly describe the issue…"
-          className="w-full bg-zinc-900 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500 transition-colors placeholder:text-zinc-600 resize-none"
+          className="w-full bg-white border border-zinc-200 text-zinc-900 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors placeholder:text-zinc-400 resize-none"
         />
         {note.length > 400 && (
-          <p className="text-xs text-zinc-600 mt-0.5 text-right">{note.length}/500</p>
+          <p className="text-xs text-zinc-400 mt-0.5 text-right">{note.length}/500</p>
         )}
       </div>
 
       {formState === 'error' && errorMsg && (
-        <p className="text-xs text-red-400">{errorMsg}</p>
+        <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">
+          {errorMsg}
+        </div>
       )}
 
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={!reason || formState === 'submitting'}
-          className="flex-1 py-2 rounded-lg bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold text-zinc-200 transition-colors"
+          className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors bg-[var(--color-accent)] hover:bg-orange-600 text-white disabled:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed"
         >
           {formState === 'submitting' ? 'Submitting…' : 'Submit flag'}
         </button>
         <button
           type="button"
           onClick={handleCancel}
-          className="px-4 py-2 rounded-lg border border-zinc-700 text-xs text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 transition-colors"
+          className="px-4 py-2 rounded-lg border border-zinc-200 text-xs text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 transition-colors"
         >
           Cancel
         </button>

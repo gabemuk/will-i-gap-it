@@ -22,6 +22,7 @@ interface Props {
 
 export default function CarInputForm({ label, value, onChange }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const isCarA = label === 'Car A';
 
   function update<K extends keyof CarInput>(key: K, val: CarInput[K]) {
     onChange({ ...value, [key]: val });
@@ -46,16 +47,18 @@ export default function CarInputForm({ label, value, onChange }: Props) {
   }
 
   const inp =
-    'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors';
+    'w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-900 text-sm placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors';
   const sel =
-    'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors cursor-pointer';
-  const lbl = 'block text-xs font-medium text-zinc-400 mb-1';
+    'w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-900 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors cursor-pointer';
+  const lbl = 'block text-xs font-medium text-zinc-500 mb-1';
   const sectionHead =
-    'text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 mt-4 border-b border-zinc-800 pb-1';
+    'text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3 mt-4 border-b border-zinc-200 pb-1';
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-      <h2 className="text-lg font-bold text-orange-500 mb-4">{label}</h2>
+    <div className={`bg-zinc-50 border border-zinc-200 border-t-2 ${isCarA ? 'border-t-orange-500' : 'border-t-zinc-800'} rounded-xl p-5`}>
+      <h2 className="text-sm font-display font-bold text-[var(--color-accent)] uppercase tracking-widest mb-4">
+        {label}
+      </h2>
 
       {/* Vehicle */}
       <p className={sectionHead}>Vehicle</p>
@@ -117,7 +120,6 @@ export default function CarInputForm({ label, value, onChange }: Props) {
       {/* Power */}
       <p className={sectionHead}>Power</p>
       <div className="space-y-3">
-        {/* Powertrain Type - visible in basic section */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={lbl}>Powertrain Type</label>
@@ -231,12 +233,12 @@ export default function CarInputForm({ label, value, onChange }: Props) {
       <button
         type="button"
         onClick={() => setShowAdvanced((v) => !v)}
-        className="mt-4 w-full flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-colors"
+        className="mt-4 w-full flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-xs font-semibold text-zinc-500 hover:text-zinc-700 transition-colors"
       >
         <span>
           {showAdvanced ? 'Hide advanced fields' : 'Show advanced fields'}
         </span>
-        <span className="text-zinc-500">{showAdvanced ? '^' : 'v'}</span>
+        <span className="text-zinc-400">{showAdvanced ? '▲' : '▼'}</span>
       </button>
 
       {/* Advanced / Improve Accuracy */}
@@ -406,7 +408,7 @@ export default function CarInputForm({ label, value, onChange }: Props) {
             <label className={lbl}>Mods / Notes</label>
             <textarea
               rows={2}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+              className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-900 text-sm placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors resize-none"
               placeholder="e.g. intake, tune, coilovers..."
               value={value.mods}
               onChange={(e) => update('mods', e.target.value)}

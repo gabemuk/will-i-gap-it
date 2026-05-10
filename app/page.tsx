@@ -67,7 +67,6 @@ function validateCar(car: CarInput, label: string): string | null {
 export default function Home() {
   const router = useRouter();
 
-  // All state and logic below is UNCHANGED from the previous version.
   const [carA, setCarA] = useState<CarInput>(defaultCar());
   const [carB, setCarB] = useState<CarInput>(defaultCar());
   const [raceType, setRaceType] = useState<RaceType>('dig');
@@ -95,10 +94,8 @@ export default function Home() {
     setSaveError('');
     const shareCode = generateShareCode();
 
-    // Attach user_id if logged in; anonymous saves still work (user_id = null)
     const { data: { user } } = await supabase.auth.getUser();
 
-    // ── Base payload (always safe, works before migration) ─────────────────
     const baseMatchupPayload = {
       share_code: shareCode,
       car_a: carA,
@@ -108,7 +105,6 @@ export default function Home() {
       user_id: user?.id ?? null,
     };
 
-    // ── Extended payload with build keys (added in learning_foundation) ────
     const extendedMatchupPayload = {
       ...baseMatchupPayload,
       car_a_build_key:    getBuildKey(carA),
@@ -156,59 +152,97 @@ export default function Home() {
 
   const raceBtnClass = (rt: RaceType) =>
     rt === raceType
-      ? 'px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-orange-500 text-white'
-      : 'px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700/60';
+      ? 'px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-[var(--color-accent)] text-white'
+      : 'px-4 py-2 rounded-lg text-sm font-medium transition-all text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/70';
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <PageShell>
+    <PageShell variant="light">
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section className="text-center pt-6 pb-12">
-        <span className="inline-block px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold tracking-widest uppercase mb-5">
+      <section className="text-center py-14 sm:py-20">
+        <span className="inline-block px-3 py-1 rounded-full bg-[var(--color-accent-dim)] border border-[rgba(249,115,22,0.25)] text-[var(--color-accent)] text-xs font-semibold tracking-widest uppercase mb-6">
           Closed-Course Only
         </span>
-        <h1 className="text-5xl sm:text-6xl font-black tracking-tight text-white mb-3 leading-none">
+        <h1 className="font-display font-bold text-5xl sm:text-7xl uppercase tracking-tight text-zinc-900 mb-4 leading-none">
           Will I Gap It?
         </h1>
-        <p className="text-zinc-400 text-lg mb-2">
-          Compare two builds. Pick the race. Get the estimated gap.
+        <p className="text-zinc-500 text-lg max-w-sm mx-auto mb-2">
+          Enter two builds. Choose the race. Get the estimated gap.
         </p>
-        <p className="text-zinc-600 text-sm mb-8">
+        <p className="text-zinc-400 text-sm mb-10">
           Closed-course and track comparison only.
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
           <a
             href="#compare"
-            className="inline-block px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold rounded-xl transition-colors text-sm shadow-[0_2px_14px_rgba(249,115,22,0.28)]"
+            className="inline-block px-7 py-3 bg-[var(--color-accent)] hover:bg-orange-600 active:scale-[0.98] text-white font-bold rounded-xl transition-all text-sm"
           >
             Compare Builds
           </a>
           <Link
             href="/leaderboard"
-            className="inline-block px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 text-zinc-200 font-semibold rounded-xl transition-colors text-sm"
+            className="inline-block px-7 py-3 bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-semibold rounded-xl transition-colors text-sm"
           >
             View Leaderboard
           </Link>
         </div>
       </section>
 
-      {/* ── Calculator ─────────────────────────────────────────────────────── */}
-      <div id="compare">
+      {/* ── Calculator — light comparison surface with orange identity rail ── */}
+      <div
+        id="compare"
+        className="bg-white border border-zinc-200 border-t-2 border-t-orange-500 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.07)] px-5 sm:px-8 py-8"
+      >
 
-        {/* Car input cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+        {/* Calculator title */}
+        <div className="mb-5 pb-5 border-b border-zinc-100">
+          <p className="font-display font-bold text-xs uppercase tracking-widest text-zinc-500">
+            Build Comparison
+          </p>
+          <p className="text-zinc-400 text-xs mt-0.5">
+            Set up both cars, choose a race format, then compare.
+          </p>
+        </div>
+
+        {/* Car A vs Car B rivalry header — updates reactively as user fills forms */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold text-sm uppercase tracking-widest text-[var(--color-accent)] leading-none">
+              Car A
+            </p>
+            {nameA !== 'Car A' && (
+              <p className="text-zinc-400 text-xs mt-1 truncate">{nameA}</p>
+            )}
+          </div>
+
+          <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-zinc-800">
+            <span className="font-display font-bold text-xs text-white tracking-widest">VS</span>
+          </div>
+
+          <div className="flex-1 min-w-0 text-right">
+            <p className="font-display font-bold text-sm uppercase tracking-widest text-zinc-600 leading-none">
+              Car B
+            </p>
+            {nameB !== 'Car B' && (
+              <p className="text-zinc-400 text-xs mt-1 truncate">{nameB}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Car input forms */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <CarInputForm label="Car A" value={carA} onChange={setCarA} />
           <CarInputForm label="Car B" value={carB} onChange={setCarB} />
         </div>
 
-        {/* Race type picker */}
-        <div className="bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-zinc-950 border border-zinc-800/80 rounded-xl p-5 mb-5">
-          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">
+        {/* Race type — segmented control on zinc-100 track */}
+        <div className="mb-6">
+          <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-widest mb-3">
             Race Type
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 p-1 bg-zinc-100 rounded-xl border border-zinc-200">
             {RACE_TYPES.map((rt) => (
               <button
                 key={rt}
@@ -221,42 +255,45 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Primary action */}
         <button
           onClick={handleCompare}
-          className="w-full py-4 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-lg rounded-xl transition-colors mb-5"
+          className="w-full py-4 bg-[var(--color-accent)] hover:bg-orange-600 active:scale-[0.99] text-white font-bold text-base rounded-xl transition-all"
         >
           Compare Builds
         </button>
 
-        {error && (
-          <div className="bg-red-950/60 border border-red-700/60 rounded-xl p-4 mb-5 text-red-300 text-sm">
-            {error}
-          </div>
-        )}
-
-        {result && (
-          <div id="result-section">
-            <ResultCard result={result} carAName={nameA} carBName={nameB} />
-            <div className="mt-4">
-              {saveError && (
-                <div className="bg-red-950/60 border border-red-700/60 rounded-xl p-4 mb-3 text-red-300 text-sm">
-                  {saveError}
-                </div>
-              )}
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-semibold rounded-xl border border-zinc-700 transition-colors text-sm"
-              >
-                {saving ? 'Saving matchup...' : 'Save & Share This Matchup'}
-              </button>
-            </div>
-          </div>
-        )}
-
       </div>
 
-      <p className="text-center text-zinc-700 text-xs mt-12">
+      {/* ── Validation error ───────────────────────────────────────────────── */}
+      {error && (
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* ── Result — timing slip card on light page bg ─────────────────────── */}
+      {result && (
+        <div id="result-section" className="mt-6 space-y-3">
+          <ResultCard result={result} carAName={nameA} carBName={nameB} />
+
+          {saveError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+              {saveError}
+            </div>
+          )}
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-3 bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-semibold rounded-xl transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving matchup...' : 'Save & Share This Matchup'}
+          </button>
+        </div>
+      )}
+
+      <p className="text-center text-zinc-400 text-xs mt-12">
         No real names, plates, or locations required.
       </p>
 

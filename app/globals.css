@@ -11,6 +11,9 @@
   --font-display: var(--font-barlow), Arial, Helvetica, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
+  /* Light page base — warm off-white, used on homepage */
+  --color-page-bg: #F2F1ED;
+
   /* Backgrounds / surfaces */
   --color-bg: #0A0A0D;
   --color-surface-1: #111116;
