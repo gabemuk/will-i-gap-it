@@ -2,12 +2,13 @@
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
-import AuthNav from '@/components/AuthNav';
 import { supabase } from '@/lib/supabase';
 import { getCarLabel } from '@/lib/compare';
 import DidYouGapItForm from '@/components/DidYouGapItForm';
 import SubmittedResultCard from '@/components/SubmittedResultCard';
 import FlagResultForm from '@/components/FlagResultForm';
+import ResultCard from '@/components/ResultCard';
+import PageShell from '@/components/PageShell';
 import type { SavedMatchup, RaceResult } from '@/lib/types';
 import { buildProfileMap, collectUserIds, getSubmitterName } from '@/lib/profileDisplay';
 
@@ -72,29 +73,33 @@ export default function MatchupPage({ params }: PageProps) {
     fetchData();
   }, [shareCode]);
 
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
-        <p className="text-zinc-500 animate-pulse">Loading matchup...</p>
-      </main>
+      <PageShell variant="light" maxWidth="max-w-2xl">
+        <div className="flex items-center justify-center py-24">
+          <p className="text-zinc-400 animate-pulse text-sm">Loading matchup…</p>
+        </div>
+      </PageShell>
     );
   }
 
+  // ── Error / not found ────────────────────────────────────────────────────
   if (error || !matchup) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-white">
-        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-          <Link href="/" className="text-orange-500 font-black text-2xl hover:text-orange-400 transition-colors">
-            Will I Gap It?
-          </Link>
-          <p className="text-red-400 mt-8 mb-6 text-sm">
-            {error || 'Matchup not found.'}
-          </p>
-          <Link href="/" className="text-orange-500 hover:text-orange-400 underline text-sm">
-            Back to calculator
-          </Link>
+      <PageShell variant="light" maxWidth="max-w-2xl">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="bg-white border border-zinc-200 rounded-xl p-8 max-w-sm w-full">
+            <p className="text-red-600 text-sm mb-4">{error || 'Matchup not found.'}</p>
+            <Link
+              href="/"
+              className="text-orange-500 hover:text-orange-600 underline underline-offset-2 text-sm transition-colors"
+            >
+              Back to calculator
+            </Link>
+          </div>
         </div>
-      </main>
+      </PageShell>
     );
   }
 
@@ -102,142 +107,97 @@ export default function MatchupPage({ params }: PageProps) {
   const carBName = getCarLabel(matchup.car_b) || 'Car B';
   const { prediction } = matchup;
 
-  const winnerLabel =
-    prediction.winner === 'Car A'
-      ? carAName
-      : prediction.winner === 'Car B'
-      ? carBName
-      : null;
-
-  const confidenceColor =
-    prediction.confidence === 'High'
-      ? 'text-green-400'
-      : prediction.confidence === 'Medium'
-      ? 'text-orange-400'
-      : 'text-yellow-400';
-
   const raceTypeDisplay =
     matchup.race_type.charAt(0).toUpperCase() + matchup.race_type.slice(1);
 
+  // ── Signed in ────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-zinc-950 text-white">
-      <div className="max-w-2xl mx-auto px-4 py-10">
+    <PageShell variant="light" maxWidth="max-w-2xl">
 
-        <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="text-orange-500 font-black text-2xl hover:text-orange-400 transition-colors"
-          >
-            Will I Gap It?
-          </Link>
-          <p className="text-zinc-600 text-xs mt-1">
-            Closed-course matchup &middot; {raceTypeDisplay} Race
-          </p>
-        </div>
+      {/* Page header */}
+      <div className="mb-6">
+        <h1 className="font-display font-bold text-4xl sm:text-5xl uppercase tracking-tight text-zinc-900">
+          Shared Matchup
+        </h1>
+        <p className="text-zinc-500 text-sm mt-1">
+          Closed-course prediction and submitted outcome.
+        </p>
+      </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-4 text-center">
-          <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">
+      {/* ── Race header card ──────────────────────────────────────────────── */}
+      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden mb-5">
+        <div className="px-5 py-3 border-b border-zinc-100 flex items-center justify-between">
+          <span className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400">
             {raceTypeDisplay} Race
-          </p>
-          <p className="text-2xl font-bold">
-            <span className="text-orange-500">{carAName}</span>
-            <span className="text-zinc-600 mx-3">vs</span>
-            <span className="text-orange-400">{carBName}</span>
+          </span>
+          <span className="font-mono text-[10px] text-zinc-400">{shareCode}</span>
+        </div>
+        <div className="px-5 py-4 text-center">
+          <p className="font-display font-bold text-2xl sm:text-3xl uppercase tracking-tight leading-none">
+            <span className="text-[var(--color-accent)]">{carAName}</span>
+            <span className="text-zinc-400 mx-3 font-normal text-xl">vs</span>
+            <span className="text-zinc-700">{carBName}</span>
           </p>
           {matchup.user_id && (
-            <p className="text-xs text-zinc-600 mt-2">
-              Matchup saved by{' '}
-              <span className="text-zinc-500">
-                {getSubmitterName(matchup.user_id, profileMap)}
-              </span>
+            <p className="text-xs text-zinc-400 mt-2">
+              Saved by{' '}
+              <span className="text-zinc-600">{getSubmitterName(matchup.user_id, profileMap)}</span>
             </p>
           )}
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          {[
-            { label: 'Car A', car: matchup.car_a, name: carAName, accent: 'text-orange-500' },
-            { label: 'Car B', car: matchup.car_b, name: carBName, accent: 'text-orange-400' },
-          ].map(({ label, car, name, accent }) => (
-            <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-              <p className={`text-xs font-bold uppercase tracking-widest mb-2 ${accent}`}>
-                {label}
-              </p>
-              <p className="text-sm font-semibold text-white mb-3 leading-snug">{name}</p>
-              <div className="space-y-1 text-xs text-zinc-400">
-                <p>
-                  {car.horsepower} {car.powerType}
-                </p>
-                <p>
-                  {car.weight} lbs &middot; {car.drivetrain}
-                </p>
-                <p>
-                  {car.transmission} &middot; {car.tire}
-                </p>
-                {car.aspiration && car.aspiration !== 'Unknown' && (
-                  <p>{car.aspiration}</p>
-                )}
-                {car.mods && (
-                  <p className="text-zinc-500 italic pt-1 border-t border-zinc-800">
-                    {car.mods}
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 mb-4">
-          <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-5">
-            Estimated Result
-          </h3>
-
-          <div className="mb-6">
-            <p className="text-xs text-zinc-500 mb-1">
-              {prediction.winner === 'Too close' ? 'Verdict' : 'Likely winner'}
+      {/* ── Car A / Car B specs ───────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-4 mb-5">
+        {[
+          {
+            label: 'Car A',
+            car: matchup.car_a,
+            name: carAName,
+            nameClass: 'text-[var(--color-accent)]',
+            labelClass: 'text-[var(--color-accent)]',
+          },
+          {
+            label: 'Car B',
+            car: matchup.car_b,
+            name: carBName,
+            nameClass: 'text-zinc-700',
+            labelClass: 'text-zinc-500',
+          },
+        ].map(({ label, car, name, nameClass, labelClass }) => (
+          <div key={label} className="bg-white border border-zinc-200 rounded-xl p-4">
+            <p className={`font-display text-[10px] font-bold uppercase tracking-widest mb-1.5 ${labelClass}`}>
+              {label}
             </p>
-            {prediction.winner === 'Too close' ? (
-              <p className="text-3xl font-bold text-yellow-400">Too Close to Call</p>
-            ) : (
-              <p className="text-3xl font-bold text-orange-500">
-                {prediction.winner} &mdash;{' '}
-                <span className="text-white">{winnerLabel}</span>
+            <p className={`text-sm font-display font-bold mb-3 leading-snug ${nameClass}`}>{name}</p>
+            <div className="space-y-1 text-xs text-zinc-500">
+              <p>
+                <span className="font-mono">{car.horsepower}</span> {car.powerType}
               </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-zinc-800 rounded-lg p-4">
-              <p className="text-xs text-zinc-500 mb-1">Estimated Gap</p>
-              <p className="text-sm font-semibold text-white leading-snug">
-                {prediction.estimatedGap}
+              <p>
+                <span className="font-mono">{car.weight}</span> lbs &middot; {car.drivetrain}
               </p>
-            </div>
-            <div className="bg-zinc-800/60 rounded-lg p-4 border border-zinc-700/50">
-              <p className="text-xs text-zinc-500 mb-1">Confidence</p>
-              <p className={`text-sm font-bold ${confidenceColor}`}>
-                {prediction.confidence}
-              </p>
+              <p>{car.transmission} &middot; {car.tire}</p>
+              {car.aspiration && car.aspiration !== 'Unknown' && (
+                <p>{car.aspiration}</p>
+              )}
+              {car.mods && (
+                <p className="text-zinc-400 italic pt-1.5 border-t border-zinc-100">
+                  {car.mods}
+                </p>
+              )}
             </div>
           </div>
+        ))}
+      </div>
 
-          <div className="mb-5">
-            <p className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Analysis</p>
-            <p className="text-sm text-zinc-300 leading-relaxed">
-              {prediction.explanation}
-            </p>
-          </div>
+      {/* ── Estimated result (ResultCard is already a white light card) ───── */}
+      <div className="mb-5">
+        <ResultCard result={prediction} carAName={carAName} carBName={carBName} />
+      </div>
 
-          <div className="bg-zinc-800/60 border border-zinc-700/50 rounded-lg p-4">
-            <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">
-              To Close the Gap
-            </p>
-            <p className="text-sm text-zinc-400 leading-relaxed">
-              {prediction.neededAdvantage}
-            </p>
-          </div>
-        </div>
-
+      {/* ── Submitted result or "Did You Gap It?" form ────────────────────── */}
+      <div className="mb-5">
         {existingResult ? (
           <>
             <SubmittedResultCard
@@ -246,7 +206,9 @@ export default function MatchupPage({ params }: PageProps) {
               carBName={carBName}
               submitterName={getSubmitterName(existingResult.user_id, profileMap)}
             />
-            <FlagResultForm raceResultId={existingResult.id} />
+            <div className="mt-3">
+              <FlagResultForm raceResultId={existingResult.id} />
+            </div>
           </>
         ) : (
           <DidYouGapItForm
@@ -256,30 +218,24 @@ export default function MatchupPage({ params }: PageProps) {
             carBName={carBName}
           />
         )}
-
-        <div className="flex gap-3 mt-6">
-          <Link
-            href="/"
-            className="flex-1 text-center py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm font-medium hover:border-orange-500 hover:text-orange-400 transition-colors"
-          >
-            Back to Calculator
-          </Link>
-          <Link
-            href="/results"
-            className="flex-1 text-center py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm font-medium hover:border-zinc-500 hover:text-zinc-300 transition-colors"
-          >
-            View Recent Results
-          </Link>
-        </div>
-        <div className="flex justify-center mt-3">
-          <AuthNav />
-        </div>
-
-        <p className="text-center text-zinc-600 text-xs mt-8">
-          For closed-course and track comparison only. Results are estimates and
-          do not guarantee real-world outcomes.
-        </p>
       </div>
-    </main>
+
+      {/* ── Bottom nav ────────────────────────────────────────────────────── */}
+      <div className="flex gap-3">
+        <Link
+          href="/"
+          className="flex-1 text-center py-2.5 rounded-xl border border-zinc-200 text-zinc-600 text-sm font-medium hover:border-orange-500 hover:text-orange-500 transition-colors"
+        >
+          Back to Calculator
+        </Link>
+        <Link
+          href="/results"
+          className="flex-1 text-center py-2.5 rounded-xl border border-zinc-200 text-zinc-600 text-sm font-medium hover:border-zinc-400 hover:text-zinc-800 transition-colors"
+        >
+          View Recent Results
+        </Link>
+      </div>
+
+    </PageShell>
   );
 }

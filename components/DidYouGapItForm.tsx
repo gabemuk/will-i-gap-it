@@ -181,9 +181,9 @@ export default function DidYouGapItForm({
 
   if (submitted) {
     return (
-      <div className="bg-green-900/30 border border-green-700/50 rounded-xl p-6 text-center">
-        <p className="text-green-400 font-bold text-lg mb-1">Result Submitted!</p>
-        <p className="text-zinc-400 text-sm">
+      <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+        <p className="text-green-700 font-bold text-lg mb-1">Result Submitted!</p>
+        <p className="text-zinc-500 text-sm">
           Thanks for reporting back. Your result has been saved.
         </p>
       </div>
@@ -191,15 +191,15 @@ export default function DidYouGapItForm({
   }
 
   const sel =
-    'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors cursor-pointer';
-  const lbl = 'block text-xs font-medium text-zinc-400 mb-1';
+    'w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-900 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors cursor-pointer';
+  const lbl = 'block text-xs font-medium text-zinc-500 mb-1.5';
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6">
-      <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-1">
+    <div className="bg-white border border-zinc-200 rounded-xl p-6">
+      <p className="font-display text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">
         Did You Gap It?
-      </h3>
-      <p className="text-zinc-400 text-sm mb-5">
+      </p>
+      <p className="text-zinc-500 text-sm mb-5">
         Report the actual result from the track.
       </p>
 
@@ -211,7 +211,7 @@ export default function DidYouGapItForm({
             value={actualWinner}
             onChange={(e) => setActualWinner(e.target.value)}
           >
-            <option value="">Select winner...</option>
+            <option value="">Select winner…</option>
             <option value="Car A">{carAName} (Car A)</option>
             <option value="Car B">{carBName} (Car B)</option>
             <option value="Too close / tie">Too close / tie</option>
@@ -225,7 +225,7 @@ export default function DidYouGapItForm({
             value={actualGap}
             onChange={(e) => setActualGap(e.target.value)}
           >
-            <option value="">Select gap...</option>
+            <option value="">Select gap…</option>
             {ACTUAL_GAPS.map((g) => (
               <option key={g}>{g}</option>
             ))}
@@ -249,12 +249,12 @@ export default function DidYouGapItForm({
           <label className={lbl}>Proof URL (optional)</label>
           <input
             type="url"
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
-            placeholder="https://youtube.com/... or https://dragy.com/..."
+            className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-900 text-sm placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors"
+            placeholder="https://youtube.com/… or https://dragy.com/…"
             value={proofUrl}
             onChange={(e) => setProofUrl(e.target.value)}
           />
-          <p className="text-xs text-zinc-600 mt-1">
+          <p className="text-xs text-zinc-400 mt-1">
             YouTube, Dragy, Instagram, or any direct link. Must start with https://.
           </p>
         </div>
@@ -263,8 +263,8 @@ export default function DidYouGapItForm({
           <label className={lbl}>Notes (optional)</label>
           <textarea
             rows={2}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"
-            placeholder="Any notes about the run..."
+            className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-900 text-sm placeholder-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-colors resize-none"
+            placeholder="Any notes about the run…"
             value={resultNotes}
             onChange={(e) => setResultNotes(e.target.value)}
           />
@@ -272,7 +272,7 @@ export default function DidYouGapItForm({
       </div>
 
       {error && (
-        <div className="mt-4 text-red-400 text-sm bg-red-950/40 border border-red-700/40 rounded-lg p-3">
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700">
           {error}
         </div>
       )}
@@ -280,12 +280,12 @@ export default function DidYouGapItForm({
       <button
         onClick={handleSubmit}
         disabled={submitting}
-        className="mt-5 w-full py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold rounded-xl transition-colors"
+        className="mt-5 w-full py-3 bg-[var(--color-accent)] hover:bg-orange-600 active:bg-orange-700 disabled:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
       >
-        {submitting ? 'Saving...' : 'Submit Result'}
+        {submitting ? 'Saving…' : 'Submit Result'}
       </button>
 
-      <p className="text-xs text-zinc-600 text-center mt-3">
+      <p className="text-xs text-zinc-400 text-center mt-3">
         Low-quality or disputed results may be excluded from future prediction tuning.
       </p>
     </div>
