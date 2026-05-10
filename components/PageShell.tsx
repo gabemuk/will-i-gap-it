@@ -29,39 +29,42 @@ export default function PageShell({
           ? 'sticky top-0 z-20 border-b border-[#DDD9D2] bg-[rgba(242,241,237,0.93)] backdrop-blur-sm'
           : 'sticky top-0 z-20 border-b border-[var(--color-border)] bg-[rgba(10,10,13,0.88)] backdrop-blur-sm'
       }>
-        <div className={`${maxWidth} mx-auto px-4 py-3 flex items-center justify-between gap-4 flex-wrap`}>
+        <div className={`${maxWidth} mx-auto px-4 py-3 flex items-center gap-4`}>
           <Link
             href="/"
-            className="font-display font-bold text-xl tracking-tight uppercase text-[var(--color-accent)] hover:text-orange-400 transition-colors"
+            className="shrink-0 font-display font-bold text-xl tracking-tight uppercase text-[var(--color-accent)] hover:text-orange-400 transition-colors"
           >
             Will I Gap It?
           </Link>
-          <div className="flex items-center gap-5 flex-wrap">
-            <Link
-              href="/results"
-              className={`text-sm transition-colors hidden sm:block ${
-                light ? 'text-zinc-600 hover:text-[var(--color-accent)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-accent)]'
-              }`}
-            >
-              Community Results
-            </Link>
-            <Link
-              href="/leaderboard"
-              className={`text-sm transition-colors ${
-                light ? 'text-zinc-600 hover:text-[var(--color-accent)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-accent)]'
-              }`}
-            >
-              Leaderboard
-            </Link>
-            <Link
-              href="/insights"
-              className={`text-sm transition-colors hidden sm:block ${
-                light ? 'text-zinc-600 hover:text-[var(--color-accent)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-accent)]'
-              }`}
-            >
-              Insights
-            </Link>
-            <AuthNav />
+          {/* Links row — right-aligned on desktop, horizontally scrollable on mobile */}
+          <div className="flex-1 overflow-x-auto">
+            <div className="flex items-center gap-5 justify-end min-w-max">
+              <Link
+                href="/results"
+                className={`text-sm transition-colors whitespace-nowrap ${
+                  light ? 'text-zinc-600 hover:text-[var(--color-accent)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-accent)]'
+                }`}
+              >
+                Community Results
+              </Link>
+              <Link
+                href="/leaderboard"
+                className={`text-sm transition-colors whitespace-nowrap ${
+                  light ? 'text-zinc-600 hover:text-[var(--color-accent)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-accent)]'
+                }`}
+              >
+                Leaderboard
+              </Link>
+              <Link
+                href="/insights"
+                className={`text-sm transition-colors whitespace-nowrap ${
+                  light ? 'text-zinc-600 hover:text-[var(--color-accent)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-accent)]'
+                }`}
+              >
+                Insights
+              </Link>
+              <AuthNav />
+            </div>
           </div>
         </div>
       </nav>
