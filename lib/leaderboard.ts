@@ -35,6 +35,7 @@ export interface CorrectPredictionEntry {
   shareCode: string | null;
   createdAt: string;
   verificationStatus: string | null;
+  userId?: string | null;
 }
 
 export interface PredictionAccuracy {
@@ -56,6 +57,7 @@ export interface BigGapEntry {
   shareCode: string | null;
   severity: number;
   createdAt: string;
+  userId?: string | null;
 }
 
 export interface RaceTypeCounts {
@@ -150,6 +152,7 @@ export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData
         shareCode: matchup.share_code ?? null,
         createdAt: r.created_at,
         verificationStatus: r.verification_status ?? null,
+        userId: r.user_id ?? null,
       });
     }
   }
@@ -184,6 +187,7 @@ export function buildLeaderboards(results: ResultWithMatchup[]): LeaderboardData
         shareCode: matchup.share_code ?? null,
         severity: getGapSeverity(r.actual_gap),
         createdAt: r.created_at,
+        userId: r.user_id ?? null,
       };
     })
     .sort((a, b) => b.severity - a.severity || b.createdAt.localeCompare(a.createdAt))

@@ -23,6 +23,7 @@ import {
 import type { ResultWithMatchup } from '@/lib/types';
 import type { LeaderboardData } from '@/lib/leaderboard';
 import FlagResultForm from '@/components/FlagResultForm';
+import { buildProfileMap, collectUserIds, getSubmitterName } from '@/lib/profileDisplay';
 
 // --- Section wrapper ---
 
@@ -78,7 +79,7 @@ function MostWinsSection({ data }: { data: LeaderboardData }) {
   );
 }
 
-function PredictionsSection({ data }: { data: LeaderboardData }) {
+function PredictionsSection({ data, profileMap }: { data: LeaderboardData; profileMap: Map<string, string> }) {
   const { predictionAccuracy, recentCorrect } = data;
   return (
     <Section title="Most Correct Predictions">
@@ -115,10 +116,16 @@ function PredictionsSection({ data }: { data: LeaderboardData }) {
                     <p className="text-xs text-zinc-500">Actual: <span className="text-zinc-300">{entry.actualWinner}</span></p>
                     <p className="text-xs text-zinc-500">{formatRaceType(entry.raceType)}</p>
                   </div>
-                  <div className="mt-1.5">
+                  <div className="flex items-center gap-3 flex-wrap mt-1.5">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getVerificationBadgeClass(entry.verificationStatus)}`}>
                       {formatVerificationStatus(entry.verificationStatus)}
                     </span>
+                    <p className="text-xs text-zinc-600">
+                      Submitted by{' '}
+                      <span className="text-zinc-500">
+                        {getSubmitterName(entry.userId, profileMap)}
+                      </span>
+                    </p>
                   </div>
                 </div>
                 {entry.shareCode && (
@@ -138,7 +145,7 @@ function PredictionsSection({ data }: { data: LeaderboardData }) {
   );
 }
 
-function BiggestGapsSection({ data }: { data: LeaderboardData }) {
+function BiggestGapsSection({ data, profileMap }: { data: LeaderboardData; profileMap: Map<string, string> }) {
   if (data.biggestGaps.length === 0) {
     return (
       <Section title="Biggest Reported Gaps">
@@ -182,6 +189,12 @@ function BiggestGapsSection({ data }: { data: LeaderboardData }) {
                       View proof
                     </a>
                   )}
+                  <p className="text-xs text-zinc-600">
+                    Submitted by{' '}
+                    <span className="text-zinc-500">
+                      {getSubmitterName(entry.userId, profileMap)}
+                    </span>
+                  </p>
                 </div>
               </div>
               {entry.shareCode && (
@@ -300,6 +313,7 @@ function LeaderboardFilterPanel({ filters, onChange, onClear, hasActiveFilters }
 
 export default function LeaderboardPage() {
   const [rawResults, setRawResults] = useState<ResultWithMatchup[]>([]);
+  const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState<LeaderboardFilters>(DEFAULT_FILTERS);
@@ -319,6 +333,7 @@ export default function LeaderboardPage() {
           verification_status,
           prediction_was_correct,
           created_at,
+          user_id,
           matchups (
             share_code,
             car_a,
@@ -333,7 +348,20 @@ export default function LeaderboardPage() {
       if (dbError) {
         setError('Could not load leaderboard data. Please try again later.');
       } else {
-        setRawResults((data ?? []) as unknown as ResultWithMatchup[]);
+        const rows = (data ?? []) as unknown as ResultWithMatchup[];
+        setRawResults(rows);
+
+        // Second query: fetch display names for submitters
+        const userIds = collectUserIds(rows.map((r) => r.user_id));
+        if (userIds.length > 0) {
+          const { data: profileRows } = await supabase
+            .from('profiles')
+            .select('id, display_name')
+            .in('id', userIds);
+          if (profileRows) {
+            setProfileMap(buildProfileMap(profileRows));
+          }
+        }
       }
       setLoading(false);
     }
@@ -445,8 +473,8 @@ export default function LeaderboardPage() {
               <>
                 <ActivitySection data={leaderboard} />
                 <MostWinsSection data={leaderboard} />
-                <PredictionsSection data={leaderboard} />
-                <BiggestGapsSection data={leaderboard} />
+                <PredictionsSection data={leaderboard} profileMap={profileMap} />
+                <BiggestGapsSection data={leaderboard} profileMap={profileMap} />
               </>
             ) : null}
           </>

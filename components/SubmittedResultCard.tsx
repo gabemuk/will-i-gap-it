@@ -7,9 +7,10 @@ interface Props {
   result: RaceResult;
   carAName: string;
   carBName: string;
+  submitterName?: string;
 }
 
-export default function SubmittedResultCard({ result, carAName, carBName }: Props) {
+export default function SubmittedResultCard({ result, carAName, carBName, submitterName }: Props) {
   const predictionCorrect = result.prediction_was_correct;
 
   function winnerDisplay(winner: string) {
@@ -31,6 +32,11 @@ export default function SubmittedResultCard({ result, carAName, carBName }: Prop
           <p className="text-zinc-600 text-xs">
             Reported {formatDate(result.created_at)}
           </p>
+          {submitterName && (
+            <p className="text-zinc-600 text-xs mt-0.5">
+              by <span className="text-zinc-500">{submitterName}</span>
+            </p>
+          )}
         </div>
 
         {/* Prediction badge */}

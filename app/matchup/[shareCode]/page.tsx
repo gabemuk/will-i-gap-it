@@ -9,6 +9,7 @@ import DidYouGapItForm from '@/components/DidYouGapItForm';
 import SubmittedResultCard from '@/components/SubmittedResultCard';
 import FlagResultForm from '@/components/FlagResultForm';
 import type { SavedMatchup, RaceResult } from '@/lib/types';
+import { buildProfileMap, collectUserIds, getSubmitterName } from '@/lib/profileDisplay';
 
 type PageProps = {
   params: Promise<{ shareCode: string }>;
@@ -19,6 +20,7 @@ export default function MatchupPage({ params }: PageProps) {
 
   const [matchup, setMatchup] = useState<SavedMatchup | null>(null);
   const [existingResult, setExistingResult] = useState<RaceResult | null>(null);
+  const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -47,6 +49,21 @@ export default function MatchupPage({ params }: PageProps) {
 
       if (resultData) {
         setExistingResult(resultData as RaceResult);
+      }
+
+      // Second query: fetch display names for any user_ids present
+      const userIds = collectUserIds([
+        matchupData.user_id,
+        resultData?.user_id,
+      ]);
+      if (userIds.length > 0) {
+        const { data: profileRows } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+          .in('id', userIds);
+        if (profileRows) {
+          setProfileMap(buildProfileMap(profileRows));
+        }
       }
 
       setLoading(false);
@@ -127,6 +144,14 @@ export default function MatchupPage({ params }: PageProps) {
             <span className="text-zinc-600 mx-3">vs</span>
             <span className="text-orange-400">{carBName}</span>
           </p>
+          {matchup.user_id && (
+            <p className="text-xs text-zinc-600 mt-2">
+              Matchup saved by{' '}
+              <span className="text-zinc-500">
+                {getSubmitterName(matchup.user_id, profileMap)}
+              </span>
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -219,6 +244,7 @@ export default function MatchupPage({ params }: PageProps) {
               result={existingResult}
               carAName={carAName}
               carBName={carBName}
+              submitterName={getSubmitterName(existingResult.user_id, profileMap)}
             />
             <FlagResultForm raceResultId={existingResult.id} />
           </>

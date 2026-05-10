@@ -27,6 +27,7 @@ import {
 } from '@/lib/resultFilters';
 import type { ResultWithMatchup } from '@/lib/types';
 import FlagResultForm from '@/components/FlagResultForm';
+import { buildProfileMap, collectUserIds, getSubmitterName } from '@/lib/profileDisplay';
 
 // --- Sub-components ---
 
@@ -49,7 +50,7 @@ function PredictionBadge({ correct }: { correct: boolean | null }) {
   );
 }
 
-function ResultEntry({ result }: { result: ResultWithMatchup }) {
+function ResultEntry({ result, submitterName }: { result: ResultWithMatchup; submitterName: string }) {
   const matchup = result.matchups;
   const carALabel = matchup ? (getCarLabel(matchup.car_a) || 'Car A') : 'Car A';
   const carBLabel = matchup ? (getCarLabel(matchup.car_b) || 'Car B') : 'Car B';
@@ -119,7 +120,12 @@ function ResultEntry({ result }: { result: ResultWithMatchup }) {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-xs text-zinc-600">{formatDate(result.created_at)}</p>
+        <div>
+          <p className="text-xs text-zinc-600">{formatDate(result.created_at)}</p>
+          <p className="text-xs text-zinc-600 mt-0.5">
+            Submitted by <span className="text-zinc-500">{submitterName}</span>
+          </p>
+        </div>
         {matchup?.share_code && (
           <Link
             href={`/matchup/${matchup.share_code}`}
@@ -234,6 +240,7 @@ function FilterPanel({ filters, onChange, onClear, hasActiveFilters }: FilterPan
 
 export default function ResultsPage() {
   const [results, setResults] = useState<ResultWithMatchup[]>([]);
+  const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
@@ -253,6 +260,7 @@ export default function ResultsPage() {
           verification_status,
           prediction_was_correct,
           created_at,
+          user_id,
           matchups (
             share_code,
             car_a,
@@ -267,7 +275,20 @@ export default function ResultsPage() {
       if (dbError) {
         setError('Could not load results. Please try again later.');
       } else {
-        setResults((data ?? []) as unknown as ResultWithMatchup[]);
+        const rows = (data ?? []) as unknown as ResultWithMatchup[];
+        setResults(rows);
+
+        // Second query: fetch display names for submitters
+        const userIds = collectUserIds(rows.map((r) => r.user_id));
+        if (userIds.length > 0) {
+          const { data: profileRows } = await supabase
+            .from('profiles')
+            .select('id, display_name')
+            .in('id', userIds);
+          if (profileRows) {
+            setProfileMap(buildProfileMap(profileRows));
+          }
+        }
       }
       setLoading(false);
     }
@@ -378,7 +399,11 @@ export default function ResultsPage() {
             ) : (
               <div className="space-y-4">
                 {filteredResults.map((result) => (
-                  <ResultEntry key={result.id} result={result} />
+                  <ResultEntry
+                    key={result.id}
+                    result={result}
+                    submitterName={getSubmitterName(result.user_id, profileMap)}
+                  />
                 ))}
               </div>
             )}
